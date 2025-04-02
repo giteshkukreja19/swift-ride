@@ -2,6 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { ambulanceService, Ambulance } from '@/services/ambulanceService';
+import { useQuery } from '@tanstack/react-query';
+import { Navigation, MapPin, LocateFixed } from 'lucide-react';
 
 interface MapProps {
   className?: string;
@@ -51,7 +54,15 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string | null>(localStorage.getItem('mapboxToken'));
-  const [ambulances, setAmbulances] = useState<any[]>([]);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [selectedAmbulance, setSelectedAmbulance] = useState<number | null>(null);
+
+  // Fetch ambulances data using React Query
+  const { data: ambulances, isLoading } = useQuery({
+    queryKey: ['ambulances'],
+    queryFn: ambulanceService.getAmbulances,
+    refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
+  });
 
   // Initialize map when token is available
   useEffect(() => {
@@ -62,11 +73,17 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v11',
-      center: [-74.5, 40], // Default to New York area
-      zoom: 9
+      center: [-74.0, 40.7], // Default to New York area
+      zoom: 10
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.current.addControl(new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true
+      },
+      trackUserLocation: true
+    }));
 
     // Cleanup on unmount
     return () => {
@@ -74,63 +91,104 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
     };
   }, [mapboxToken]);
 
-  // Load and display ambulance markers when map is ready
-  useEffect(() => {
-    if (!map.current || !mapboxToken) return;
-
-    const fetchAmbulances = async () => {
-      // In a real app, this would fetch from your API
-      // For now, we'll use sample data
-      const mockAmbulances = [
-        { id: 1, lat: 40.7128, lng: -74.006, status: 'available' },
-        { id: 2, lat: 40.7328, lng: -73.986, status: 'busy' },
-        { id: 3, lat: 40.7228, lng: -74.046, status: 'en-route' }
-      ];
-      
-      setAmbulances(mockAmbulances);
-    };
-
-    fetchAmbulances();
-
-    // Setup interval to periodically update ambulance positions
-    const intervalId = setInterval(fetchAmbulances, 30000);
-    return () => clearInterval(intervalId);
-  }, [map.current, mapboxToken]);
-
   // Add markers for ambulances
   useEffect(() => {
-    if (!map.current || ambulances.length === 0) return;
+    if (!map.current || !ambulances || isLoading) return;
 
     // Remove existing markers
-    const markers = document.getElementsByClassName('ambulance-marker');
-    while (markers[0]) {
-      markers[0].parentNode?.removeChild(markers[0]);
-    }
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
 
     // Add new markers
     ambulances.forEach(ambulance => {
       // Create custom marker element
       const el = document.createElement('div');
       el.className = 'ambulance-marker';
-      el.style.width = '25px';
-      el.style.height = '25px';
+      el.style.width = '30px';
+      el.style.height = '30px';
       el.style.borderRadius = '50%';
       el.style.backgroundColor = ambulance.status === 'available' ? '#10B981' : 
                                 ambulance.status === 'busy' ? '#EF4444' : '#F59E0B';
-      el.style.border = '2px solid white';
-      el.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+      el.style.border = '3px solid white';
+      el.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+      el.style.cursor = 'pointer';
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      
+      // Add ambulance icon based on vehicle type
+      if (ambulance.vehicleType === 'ambulance') {
+        el.innerHTML = '🚑';
+      } else if (ambulance.vehicleType === 'helicopter') {
+        el.innerHTML = '🚁';
+      } else {
+        el.innerHTML = '🏥';
+      }
 
-      // Add marker to map
-      new mapboxgl.Marker(el)
+      // Create a popup with ambulance details
+      const popup = new mapboxgl.Popup({ offset: 25 })
+        .setHTML(`
+          <div class="p-2">
+            <h3 class="font-bold text-lg">${ambulance.vehicleNumber}</h3>
+            <p class="text-sm mb-1">Status: <span class="${
+              ambulance.status === 'available' ? 'text-green-500' : 
+              ambulance.status === 'busy' ? 'text-red-500' : 'text-yellow-500'
+            } font-semibold">${ambulance.status}</span></p>
+            <p class="text-sm">Type: ${ambulance.vehicleType}</p>
+            <p class="text-sm">Equipment: ${ambulance.equipmentLevel}</p>
+            ${ambulance.currentSpeed ? `<p class="text-sm">Speed: ${ambulance.currentSpeed} mph</p>` : ''}
+            ${ambulance.currentDestination ? `<p class="text-sm">Destination: ${ambulance.currentDestination}</p>` : ''}
+            ${ambulance.estimatedArrivalTime ? `<p class="text-sm">ETA: ${ambulance.estimatedArrivalTime}</p>` : ''}
+          </div>
+        `);
+
+      // Add marker to map with popup
+      const marker = new mapboxgl.Marker(el)
         .setLngLat([ambulance.lng, ambulance.lat])
-        .setPopup(new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`<h3>Ambulance #${ambulance.id}</h3><p>Status: ${ambulance.status}</p>`))
-        .addTo(map.current);
+        .setPopup(popup);
+      
+      // Add marker to map and store in ref
+      marker.addTo(map.current!);
+      markersRef.current.push(marker);
+
+      // Add click event to marker
+      el.addEventListener('click', () => {
+        setSelectedAmbulance(ambulance.id);
+        
+        // Fly to the ambulance location with animation
+        map.current?.flyTo({
+          center: [ambulance.lng, ambulance.lat],
+          zoom: 14,
+          speed: 1.2,
+          curve: 1.5
+        });
+      });
     });
-  }, [ambulances]);
+
+    // Adjust map bounds to fit all markers
+    if (ambulances.length > 0 && !selectedAmbulance) {
+      const bounds = new mapboxgl.LngLatBounds();
+      ambulances.forEach(ambulance => {
+        bounds.extend([ambulance.lng, ambulance.lat]);
+      });
+      map.current.fitBounds(bounds, { padding: 100 });
+    }
+  }, [ambulances, isLoading, selectedAmbulance]);
 
   const handleTokenSubmit = (token: string) => {
     setMapboxToken(token);
+  };
+
+  const handleResetView = () => {
+    if (!map.current || !ambulances) return;
+    
+    setSelectedAmbulance(null);
+    
+    const bounds = new mapboxgl.LngLatBounds();
+    ambulances.forEach(ambulance => {
+      bounds.extend([ambulance.lng, ambulance.lat]);
+    });
+    map.current.fitBounds(bounds, { padding: 100 });
   };
 
   if (!mapboxToken) {
@@ -140,9 +198,21 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
   return (
     <div className={`relative ${className}`}>
       <div ref={mapContainer} className="w-full h-[500px] rounded-lg shadow-lg" />
+      
+      {/* Map Controls */}
+      <div className="absolute top-4 left-4 bg-white p-3 rounded shadow-md z-10">
+        <button 
+          onClick={handleResetView}
+          className="flex items-center gap-1 text-sm bg-swift-red text-white px-3 py-1 rounded hover:bg-red-700 transition-colors"
+        >
+          <MapPin size={16} /> Reset View
+        </button>
+      </div>
+      
+      {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-white p-3 rounded shadow-md z-10">
         <h3 className="font-bold text-swift-dark mb-2">Ambulance Status</h3>
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col space-y-2">
           <div className="flex items-center">
             <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
             <span className="text-sm">Available</span>
@@ -156,7 +226,25 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
             <span className="text-sm">En-route</span>
           </div>
         </div>
+        <div className="mt-2 pt-2 border-t border-gray-200">
+          <div className="flex items-center">
+            <LocateFixed size={16} className="mr-2 text-swift-dark" />
+            <span className="text-sm">Real-time GPS Location</span>
+          </div>
+        </div>
       </div>
+
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-swift-red mr-3"></div>
+              <span>Loading ambulance data...</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

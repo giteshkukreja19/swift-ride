@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Phone } from "lucide-react";
+import { Phone, Navigation } from "lucide-react";
 
 const Header = () => {
   return (
@@ -18,6 +18,10 @@ const Header = () => {
           
           <nav className="hidden md:flex space-x-8 text-swift-dark">
             <Link to="/" className="hover:text-swift-red transition-colors">Home</Link>
+            <Link to="/tracking" className="hover:text-swift-red transition-colors flex items-center gap-1">
+              <Navigation size={16} />
+              <span>Ambulance Service</span>
+            </Link>
             <Link to="/services" className="hover:text-swift-red transition-colors">Services</Link>
             <Link to="/about" className="hover:text-swift-red transition-colors">About</Link>
             <Link to="/contact" className="hover:text-swift-red transition-colors">Contact</Link>
