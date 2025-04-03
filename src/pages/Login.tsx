@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -12,6 +11,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { LockKeyhole, AtSign, LogIn, User, Phone, Droplet, MapPin } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { verifyLogin, getUserByEmail, addUser } from '@/utils/userDatabase';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 // Define form schema with Zod
 const formSchema = z.object({
@@ -44,27 +46,64 @@ const Login = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     
-    // Simulate login API call
-    setTimeout(() => {
-      // Mock successful login
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('user', JSON.stringify({
-        id: '1',
-        name: values.name,
-        email: values.email,
-        phone: values.phone,
-        bloodGroup: values.bloodGroup,
-        address: values.address
-      }));
+    try {
+      // Check if user exists
+      const existingUser = getUserByEmail(values.email);
       
+      if (existingUser) {
+        // Verify login credentials
+        const userData = verifyLogin(values.email, values.password);
+        
+        if (userData) {
+          // Login successful
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          toast({
+            title: "Login successful",
+            description: "Welcome back to Swift Ride Rescue",
+          });
+          
+          navigate('/');
+        } else {
+          // Invalid password
+          toast({
+            title: "Login failed",
+            description: "Invalid password. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // User doesn't exist, create a new account
+        const newUser = addUser({
+          id: Date.now().toString(),
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          bloodGroup: values.bloodGroup,
+          address: values.address,
+          password: values.password,
+        });
+        
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('user', JSON.stringify(newUser));
+        
+        toast({
+          title: "Account created",
+          description: "Your account has been created and you're now logged in",
+        });
+        
+        navigate('/');
+      }
+    } catch (error) {
       toast({
-        title: "Login successful",
-        description: "Welcome back to Swift Ride Rescue",
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
       });
-      
+    } finally {
       setIsLoading(false);
-      navigate('/');
-    }, 1500);
+    }
   };
 
   const handleEmergencyAccess = () => {
@@ -78,6 +117,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Header />
       <div className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 md:p-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
@@ -307,6 +347,7 @@ const Login = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

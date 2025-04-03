@@ -11,6 +11,7 @@ import Contact from "./pages/Contact";
 import AmbulanceTracking from "./pages/AmbulanceTracking";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { useEffect, useState } from "react";
 
@@ -39,6 +40,7 @@ const App = () => {
             <Route path="/tracking" element={<AmbulanceTracking />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/profile" element={<Profile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
