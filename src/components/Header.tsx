@@ -1,174 +1,198 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Phone, Navigation, Ambulance, Menu, X, Building2, Stethoscope } from "lucide-react";
-import EmergencyButton from '@/components/EmergencyButton';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Ambulance, Menu, X, User, LogOut } from 'lucide-react';
 import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useMobile } from '@/hooks/use-mobile';
+
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+}
 
 const Header = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isMobile = useMobile();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  
+  useEffect(() => {
+    // Check if user is logged in
+    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    setIsLoggedIn(loggedIn);
+    
+    if (loggedIn) {
+      try {
+        const userData = JSON.parse(localStorage.getItem('user') || '');
+        setUserData(userData);
+      } catch (e) {
+        console.error('Failed to parse user data');
+      }
+    }
+  }, []);
+  
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
+    setIsLoggedIn(false);
+    setUserData(null);
+    
+    // Redirect to home after logout
+    if (location.pathname !== '/') {
+      window.location.href = '/';
+    } else {
+      // Force a reload to update UI states if already on home page
+      window.location.reload();
+    }
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  const links = [
+    { path: '/', label: 'Home' },
+    { path: '/services', label: 'Services' },
+    { path: '/about', label: 'About' },
+    { path: '/contact', label: 'Contact' },
+    { path: '/tracking', label: 'Tracking' },
+  ];
 
   return (
-    <header className="sticky top-0 w-full bg-white z-50 shadow-sm">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-swift-red rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xl">SR</span>
-            </div>
-            <span className="text-swift-dark font-bold text-xl md:text-2xl">Swift Ride Rescue</span>
-          </div>
-          
-          <nav className="hidden md:flex space-x-8 text-swift-dark">
-            <Link to="/" className="hover:text-swift-red transition-colors">Home</Link>
+    <header className="bg-white shadow-sm">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <Link to="/" className="flex items-center">
+            <Ambulance className="h-8 w-8 text-swift-red" />
+            <span className="ml-2 text-xl font-bold text-swift-dark">Swift Ride Rescue</span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            {links.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`text-sm font-medium transition-colors hover:text-swift-red ${
+                  isActive(link.path) ? 'text-swift-red' : 'text-swift-dark'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
             
-            <NavigationMenu>
-              <NavigationMenuList>
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger className="hover:text-swift-red transition-colors">
-                    Ambulance Service
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
-                      <li className="row-span-3">
-                        <NavigationMenuLink asChild>
-                          <Link
-                            to="/tracking"
-                            className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-swift-red/50 to-swift-red p-6 no-underline outline-none focus:shadow-md"
-                          >
-                            <Ambulance className="h-6 w-6 text-white" />
-                            <div className="mt-4 mb-2 text-lg font-medium text-white">
-                              Ambulance Tracking
-                            </div>
-                            <p className="text-sm leading-tight text-white/90">
-                              Real-time tracking of emergency medical transport fleet
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                      <li>
-                        <Link
-                          to="/tracking"
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            <Navigation className="h-4 w-4 inline mr-2" />
-                            GPS Tracking
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Monitor ambulance locations in real-time
-                          </p>
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          to="/"
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            <Building2 className="h-4 w-4 inline mr-2" />
-                            Nearby Hospitals
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Find the closest emergency care centers
-                          </p>
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          to="/"
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="text-sm font-medium leading-none">
-                            <Stethoscope className="h-4 w-4 inline mr-2" />
-                            Health Assistant
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            AI-powered basic medical guidance
-                          </p>
-                        </Link>
-                      </li>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
-            
-            <Link to="/services" className="hover:text-swift-red transition-colors">Services</Link>
-            <Link to="/about" className="hover:text-swift-red transition-colors">About</Link>
-            <Link to="/contact" className="hover:text-swift-red transition-colors">Contact</Link>
-          </nav>
-          
-          <div className="hidden md:flex">
-            <EmergencyButton />
-          </div>
-          
-          {/* Mobile menu button */}
-          <button 
-            className="md:hidden p-2"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
+            {isLoggedIn ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-swift-red text-white">
+                      {userData?.name.charAt(0) || 'U'}
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuLabel className="font-normal text-sm truncate">
+                    {userData?.email}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
-              <Menu className="w-6 h-6" />
+              <div className="flex items-center space-x-3">
+                <Link to="/login">
+                  <Button variant="ghost" size="sm">Log in</Button>
+                </Link>
+                <Link to="/register">
+                  <Button size="sm">Sign up</Button>
+                </Link>
+              </div>
             )}
+          </nav>
+
+          {/* Mobile Menu Button */}
+          <button className="md:hidden text-swift-dark" onClick={toggleMobileMenu}>
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
-      
-      {/* Mobile menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t px-4 py-2">
-          <nav className="flex flex-col space-y-3 py-3">
-            <Link 
-              to="/" 
-              className="px-3 py-2 rounded-md hover:bg-gray-100"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link 
-              to="/tracking" 
-              className="px-3 py-2 rounded-md hover:bg-gray-100 flex items-center"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <Navigation className="h-4 w-4 mr-2" />
-              Ambulance Tracking
-            </Link>
-            <Link 
-              to="/services" 
-              className="px-3 py-2 rounded-md hover:bg-gray-100"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Services
-            </Link>
-            <Link 
-              to="/about" 
-              className="px-3 py-2 rounded-md hover:bg-gray-100"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              About
-            </Link>
-            <Link 
-              to="/contact" 
-              className="px-3 py-2 rounded-md hover:bg-gray-100"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Contact
-            </Link>
-            <div className="pt-2">
-              <EmergencyButton />
-            </div>
+
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
+        <div className="md:hidden px-4 py-3 bg-white border-t border-gray-100">
+          <nav className="flex flex-col space-y-3">
+            {links.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`text-sm font-medium py-2 transition-colors hover:text-swift-red ${
+                  isActive(link.path) ? 'text-swift-red' : 'text-swift-dark'
+                }`}
+                onClick={closeMobileMenu}
+              >
+                {link.label}
+              </Link>
+            ))}
+            
+            {isLoggedIn ? (
+              <>
+                <Link 
+                  to="/profile" 
+                  className="text-sm font-medium py-2 transition-colors hover:text-swift-red"
+                  onClick={closeMobileMenu}
+                >
+                  <User className="inline-block mr-2 h-4 w-4" />
+                  Profile
+                </Link>
+                <button 
+                  className="text-sm font-medium py-2 text-left transition-colors hover:text-swift-red"
+                  onClick={() => {
+                    closeMobileMenu();
+                    handleLogout();
+                  }}
+                >
+                  <LogOut className="inline-block mr-2 h-4 w-4" />
+                  Log out
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col space-y-2 pt-2 border-t border-gray-100">
+                <Link to="/login" onClick={closeMobileMenu}>
+                  <Button variant="outline" className="w-full">Log in</Button>
+                </Link>
+                <Link to="/register" onClick={closeMobileMenu}>
+                  <Button className="w-full">Sign up</Button>
+                </Link>
+              </div>
+            )}
           </nav>
         </div>
       )}
