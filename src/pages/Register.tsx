@@ -10,6 +10,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AtSign, LockKeyhole, UserRoundPlus, User } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { addUser, getUserByEmail } from '@/utils/userDatabase';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 // Define form schema with Zod
 const formSchema = z.object({
@@ -41,28 +44,52 @@ const Register = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     
-    // Simulate registration API call
-    setTimeout(() => {
-      // Mock successful registration
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('user', JSON.stringify({
-        id: '1',
+    try {
+      // Check if user already exists
+      const existingUser = getUserByEmail(values.email);
+      
+      if (existingUser) {
+        toast({
+          title: "Registration failed",
+          description: "A user with this email already exists",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Create new user
+      const newUser = addUser({
+        id: Date.now().toString(),
         name: values.name,
-        email: values.email
-      }));
+        email: values.email,
+        password: values.password,
+      });
+      
+      // Store user session
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('user', JSON.stringify(newUser));
       
       toast({
         title: "Registration successful",
         description: "Your account has been created",
       });
       
+      navigate('/profile');
+    } catch (error) {
+      toast({
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-      navigate('/');
-    }, 1500);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Header />
       <div className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 md:p-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
@@ -209,6 +236,7 @@ const Register = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
