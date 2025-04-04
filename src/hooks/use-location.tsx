@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import '@/types/google-maps';
 
 interface LocationHookResult {
   userLocation: { lat: number; lng: number } | null;

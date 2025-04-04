@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Clock, MapPin, Navigation, Phone, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocation } from '@/hooks/use-location';
 import { useToast } from '@/hooks/use-toast';
+import '@/types/google-maps';
 
 interface Hospital {
   id: string;
@@ -25,7 +25,7 @@ const NearbyHospitals = () => {
 
   useEffect(() => {
     const fetchNearbyHospitals = async () => {
-      if (!userLocation || !window.google) return;
+      if (!userLocation || !window.google?.maps) return;
       
       setIsLoading(true);
       
