@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ambulanceService, Ambulance } from '@/services/ambulanceService';
 import { useQuery } from '@tanstack/react-query';
 import { Navigation, MapPin, LocateFixed } from 'lucide-react';
+import '@/types/google-maps';
 
 interface MapProps {
   className?: string;
@@ -102,7 +103,7 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
 
   // Initialize map when script is loaded
   useEffect(() => {
-    if (!mapLoaded || !mapContainer.current || !googleMapsApiKey) return;
+    if (!mapLoaded || !mapContainer.current || !googleMapsApiKey || !window.google?.maps) return;
 
     // Create the map
     map.current = new google.maps.Map(mapContainer.current, {
@@ -162,7 +163,7 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
 
   // Add markers for ambulances
   useEffect(() => {
-    if (!map.current || !ambulances || isLoading || !mapLoaded) return;
+    if (!map.current || !ambulances || isLoading || !mapLoaded || !window.google?.maps) return;
 
     // Remove existing markers
     markersRef.current.forEach(marker => marker.setMap(null));
@@ -230,7 +231,7 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
     });
     
     // Fit bounds to show all markers if no ambulance is selected
-    if (ambulances.length > 0 && !selectedAmbulance) {
+    if (ambulances.length > 0 && !selectedAmbulance && window.google?.maps) {
       const bounds = new google.maps.LatLngBounds();
       ambulances.forEach(ambulance => {
         bounds.extend({ lat: ambulance.lat, lng: ambulance.lng });
@@ -250,7 +251,7 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
   };
 
   const handleResetView = () => {
-    if (!map.current || !ambulances) return;
+    if (!map.current || !ambulances || !window.google?.maps) return;
     
     setSelectedAmbulance(null);
     

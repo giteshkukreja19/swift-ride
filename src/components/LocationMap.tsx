@@ -2,6 +2,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { MapPin, Navigation } from 'lucide-react';
 
+// Import the Google Maps types
+import '@/types/google-maps';
+
 interface LocationMapProps {
   location: { lat: number; lng: number } | null;
   className?: string;
@@ -14,7 +17,7 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
 
   useEffect(() => {
     // Skip if no location or Google Maps hasn't loaded
-    if (!location || !mapRef.current || !window.google) return;
+    if (!location || !mapRef.current || !window.google?.maps) return;
 
     // Initialize map
     const googleMap = new google.maps.Map(mapRef.current, {
