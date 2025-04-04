@@ -13,6 +13,7 @@ import AmbulanceTracking from "./pages/AmbulanceTracking";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import EmergencyRequest from "./pages/EmergencyRequest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => {
             <Route path="/services" element={<Services />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/emergency" element={<EmergencyRequest />} />
             <Route path="/tracking" element={<AmbulanceTracking />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

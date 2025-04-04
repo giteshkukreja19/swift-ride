@@ -99,6 +99,7 @@ const NearbyHospitals = () => {
                   size="sm" 
                   variant="outline" 
                   className="flex items-center gap-1 text-xs"
+                  onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(hospital.name + ' ' + hospital.address)}`)}
                 >
                   <Navigation className="h-3 w-3" /> Directions
                 </Button>
@@ -106,6 +107,7 @@ const NearbyHospitals = () => {
                   size="sm" 
                   variant="outline" 
                   className="flex items-center gap-1 text-xs"
+                  onClick={() => window.location.href = `tel:${hospital.phone.replace(/[^\d+]/g, '')}`}
                 >
                   <Phone className="h-3 w-3" /> Call
                 </Button>
