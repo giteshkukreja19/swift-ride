@@ -1,6 +1,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { MapPin, Navigation, AlertCircle } from 'lucide-react';
+import GoogleMapsLoader from './GoogleMapsLoader';
 
 // Import the Google Maps types
 import '@/types/google-maps';
@@ -18,13 +19,8 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
 
   useEffect(() => {
     // Skip if no location or Google Maps hasn't loaded
-    if (!location || !mapRef.current) return;
+    if (!location || !mapRef.current || !window.google?.maps) return;
     
-    if (!window.google?.maps) {
-      setMapError("Google Maps failed to load. Please check your API key or try again later.");
-      return;
-    }
-
     try {
       // Initialize map
       const googleMap = new google.maps.Map(mapRef.current, {
@@ -78,44 +74,48 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
   if (!location) return null;
   
   return (
-    <div className={`p-4 border border-gray-200 rounded-lg shadow-sm bg-white ${className}`}>
-      <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
-        <span className="flex items-center">
-          <MapPin className="h-4 w-4 mr-1 text-swift-red" />
-          Your Current Location
-        </span>
-        <span className="text-xs text-gray-500">
-          {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
-        </span>
-      </h3>
-      
-      {mapError ? (
-        <div className="rounded-md overflow-hidden h-[250px] bg-gray-100 flex items-center justify-center">
-          <div className="text-center p-4">
-            <AlertCircle className="mx-auto h-10 w-10 text-red-500 mb-2" />
-            <p className="text-red-600 font-medium">{mapError}</p>
-            <p className="text-sm text-gray-500 mt-1">Please check your Google Maps API key</p>
+    <GoogleMapsLoader>
+      <div className={`p-4 border border-gray-200 rounded-lg shadow-sm bg-white ${className}`}>
+        <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+          <span className="flex items-center">
+            <MapPin className="h-4 w-4 mr-1 text-swift-red" />
+            Your Current Location
+          </span>
+          <span className="text-xs text-gray-500">
+            {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+          </span>
+        </h3>
+        
+        {mapError ? (
+          <div className="rounded-md overflow-hidden h-[250px] bg-gray-100 flex items-center justify-center">
+            <div className="text-center p-4">
+              <AlertCircle className="mx-auto h-10 w-10 text-red-500 mb-2" />
+              <p className="text-red-600 font-medium">{mapError}</p>
+              <p className="text-sm text-gray-500 mt-1">Please check your Google Maps API key</p>
+            </div>
           </div>
+        ) : (
+          <div className="rounded-md overflow-hidden h-[250px] bg-gray-100" ref={mapRef}></div>
+        )}
+        
+        <div className="flex justify-between items-center mt-2">
+          <p className="text-xs text-gray-500">
+            Your precise location will be shared when requesting emergency services.
+          </p>
+          <button 
+            className="text-xs text-swift-red flex items-center hover:underline"
+            onClick={() => {
+              if (location) {
+                window.open(`https://www.google.com/maps/search/?api=1&query=${location.lat},${location.lng}`);
+              }
+            }}
+          >
+            <Navigation className="h-3 w-3 mr-1" /> 
+            Open in Google Maps
+          </button>
         </div>
-      ) : (
-        <div className="rounded-md overflow-hidden h-[250px] bg-gray-100" ref={mapRef}></div>
-      )}
-      
-      <div className="flex justify-between items-center mt-2">
-        <p className="text-xs text-gray-500">
-          Your precise location will be shared when requesting emergency services.
-        </p>
-        <button 
-          className="text-xs text-swift-red flex items-center hover:underline"
-          onClick={() => {
-            window.open(`https://www.google.com/maps/search/?api=1&query=${location.lat},${location.lng}`);
-          }}
-        >
-          <Navigation className="h-3 w-3 mr-1" /> 
-          Open in Google Maps
-        </button>
       </div>
-    </div>
+    </GoogleMapsLoader>
   );
 };
 
