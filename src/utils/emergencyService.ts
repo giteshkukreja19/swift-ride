@@ -108,13 +108,31 @@ export const createEmergencyRequest = (
 export const getEmergencyRequestById = (requestId: string): EmergencyRequest | null => {
   const db = getDatabase();
   const request = db.emergencyRequests.find(req => req.id === requestId);
-  return request || null;
+  
+  if (!request) return null;
+  
+  // Convert database request to our EmergencyRequest format
+  return {
+    ...request,
+    patientName: request.patientName || '',
+    phoneNumber: request.phoneNumber || '',
+    bloodGroup: request.bloodGroup || '',
+  } as EmergencyRequest;
 };
 
 // Get all emergency requests for a user
 export const getUserEmergencyRequests = (userId: string): EmergencyRequest[] => {
   const db = getDatabase();
-  return db.emergencyRequests.filter(req => req.userId === userId);
+  
+  // Map database requests to our EmergencyRequest format
+  return db.emergencyRequests
+    .filter(req => req.userId === userId)
+    .map(req => ({
+      ...req,
+      patientName: req.patientName || '',
+      phoneNumber: req.phoneNumber || '',
+      bloodGroup: req.bloodGroup || '',
+    } as EmergencyRequest));
 };
 
 // Update emergency request status
@@ -135,15 +153,29 @@ export const updateEmergencyRequestStatus = (
   }
   
   saveDatabase(db);
-  return db.emergencyRequests[requestIndex];
+  
+  // Convert to our EmergencyRequest format
+  return {
+    ...db.emergencyRequests[requestIndex],
+    patientName: db.emergencyRequests[requestIndex].patientName || '',
+    phoneNumber: db.emergencyRequests[requestIndex].phoneNumber || '',
+    bloodGroup: db.emergencyRequests[requestIndex].bloodGroup || '',
+  } as EmergencyRequest;
 };
 
 // Get all active emergency requests
 export const getActiveEmergencyRequests = (): EmergencyRequest[] => {
   const db = getDatabase();
-  return db.emergencyRequests.filter(
-    req => ['pending', 'dispatched'].includes(req.status)
-  );
+  
+  // Map database requests to our EmergencyRequest format
+  return db.emergencyRequests
+    .filter(req => ['pending', 'dispatched'].includes(req.status))
+    .map(req => ({
+      ...req,
+      patientName: req.patientName || '',
+      phoneNumber: req.phoneNumber || '',
+      bloodGroup: req.bloodGroup || '',
+    } as EmergencyRequest));
 };
 
 // Cancel emergency request
