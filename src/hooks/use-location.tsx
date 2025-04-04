@@ -95,6 +95,7 @@ export function useLocation(): LocationHookResult {
               if (status === "OK" && results && results[0]) {
                 resolve(results[0].formatted_address);
               } else {
+                console.log("Google geocoding failed, falling back to Nominatim");
                 // Fallback to Nominatim if Google Geocoding fails
                 fetchAddressFromNominatim(latitude, longitude)
                   .then(address => resolve(address));
@@ -103,6 +104,7 @@ export function useLocation(): LocationHookResult {
           );
         });
       } else {
+        console.log("Google Maps not available, using Nominatim");
         // Fallback to Nominatim if Google Maps API is not available
         return fetchAddressFromNominatim(latitude, longitude);
       }

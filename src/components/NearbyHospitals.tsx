@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Clock, MapPin, Navigation, Phone, AlertCircle } from 'lucide-react';
@@ -21,13 +22,20 @@ const NearbyHospitals = () => {
   const { userLocation } = useLocation();
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchNearbyHospitals = async () => {
-      if (!userLocation || !window.google?.maps) return;
+      if (!userLocation) return;
+      
+      if (!window.google?.maps) {
+        setError("Google Maps API is not loaded. Please check your API key.");
+        return;
+      }
       
       setIsLoading(true);
+      setError(null);
       
       try {
         // Create PlacesService instance (requires a DOM element)
@@ -66,8 +74,10 @@ const NearbyHospitals = () => {
             });
             
             setHospitals(hospitalResults);
+            setError(null);
           } else {
             console.error('Failed to fetch hospitals:', status);
+            setError(`Unable to find nearby hospitals (${status})`);
             toast({
               title: "Failed to load hospitals",
               description: "Unable to find nearby hospitals. Please try again later.",
@@ -83,6 +93,7 @@ const NearbyHospitals = () => {
       } catch (error) {
         console.error('Error fetching hospitals:', error);
         setIsLoading(false);
+        setError("Failed to fetch nearby hospitals");
         toast({
           title: "Error",
           description: "Failed to fetch nearby hospitals",
@@ -120,7 +131,13 @@ const NearbyHospitals = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {error ? (
+          <div className="text-center py-8">
+            <AlertCircle className="mx-auto h-10 w-10 text-red-500 mb-3" />
+            <p className="text-red-600 font-medium">{error}</p>
+            <p className="text-sm text-gray-500 mt-1">Please check your Google Maps API key or try again later</p>
+          </div>
+        ) : isLoading ? (
           <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-swift-red"></div>
           </div>
