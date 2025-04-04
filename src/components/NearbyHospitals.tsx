@@ -5,6 +5,7 @@ import { Building2, Clock, MapPin, Navigation, Phone, AlertCircle } from 'lucide
 import { Button } from '@/components/ui/button';
 import { useLocation } from '@/hooks/use-location';
 import { useToast } from '@/hooks/use-toast';
+import GoogleMapsLoader from './GoogleMapsLoader';
 import '@/types/google-maps';
 
 interface Hospital {
@@ -123,98 +124,100 @@ const NearbyHospitals = () => {
   };
   
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-swift-red" />
-          Nearby Hospitals
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {error ? (
-          <div className="text-center py-8">
-            <AlertCircle className="mx-auto h-10 w-10 text-red-500 mb-3" />
-            <p className="text-red-600 font-medium">{error}</p>
-            <p className="text-sm text-gray-500 mt-1">Please check your Google Maps API key or try again later</p>
-          </div>
-        ) : isLoading ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-swift-red"></div>
-          </div>
-        ) : hospitals.length > 0 ? (
-          <div className="space-y-4">
-            {hospitals.map((hospital) => (
-              <div key={hospital.id} className="rounded-lg border p-4">
-                <div className="flex justify-between">
-                  <h3 className="font-medium">{hospital.name}</h3>
-                  <span className="flex items-center text-sm text-gray-500">
-                    <Navigation className="mr-1 h-3 w-3" /> {hospital.distance} miles
-                  </span>
-                </div>
-                
-                <div className="mt-2 flex items-center text-sm text-gray-500">
-                  <MapPin className="mr-1 h-3 w-3" />
-                  <span>{hospital.address}</span>
-                </div>
-                
-                {hospital.phone && (
-                  <div className="mt-2 flex items-center text-sm text-gray-500">
-                    <Phone className="mr-1 h-3 w-3" />
-                    <span>{hospital.phone}</span>
+    <GoogleMapsLoader>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-swift-red" />
+            Nearby Hospitals
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {error ? (
+            <div className="text-center py-8">
+              <AlertCircle className="mx-auto h-10 w-10 text-red-500 mb-3" />
+              <p className="text-red-600 font-medium">{error}</p>
+              <p className="text-sm text-gray-500 mt-1">Please check your Google Maps API key or try again later</p>
+            </div>
+          ) : isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-swift-red"></div>
+            </div>
+          ) : hospitals.length > 0 ? (
+            <div className="space-y-4">
+              {hospitals.map((hospital) => (
+                <div key={hospital.id} className="rounded-lg border p-4">
+                  <div className="flex justify-between">
+                    <h3 className="font-medium">{hospital.name}</h3>
+                    <span className="flex items-center text-sm text-gray-500">
+                      <Navigation className="mr-1 h-3 w-3" /> {hospital.distance} miles
+                    </span>
                   </div>
-                )}
-                
-                <div className="mt-2 flex items-center gap-3 flex-wrap">
-                  <span className="flex items-center rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
-                    Emergency Services
-                  </span>
                   
-                  {hospital.isOpen !== undefined && (
-                    <span className={`flex items-center rounded-full ${hospital.isOpen ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'} px-2 py-1 text-xs font-medium`}>
-                      {hospital.isOpen ? 'Open Now' : 'Closed'}
-                    </span>
-                  )}
-                  
-                  {hospital.rating && (
-                    <span className="flex items-center text-xs">
-                      Rating: {hospital.rating.toFixed(1)} ★
-                    </span>
-                  )}
-                </div>
-                
-                <div className="mt-3 flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex items-center gap-1 text-xs"
-                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital.name)}&query_place_id=${hospital.id}`)}
-                  >
-                    <Navigation className="h-3 w-3" /> Directions
-                  </Button>
+                  <div className="mt-2 flex items-center text-sm text-gray-500">
+                    <MapPin className="mr-1 h-3 w-3" />
+                    <span>{hospital.address}</span>
+                  </div>
                   
                   {hospital.phone && (
+                    <div className="mt-2 flex items-center text-sm text-gray-500">
+                      <Phone className="mr-1 h-3 w-3" />
+                      <span>{hospital.phone}</span>
+                    </div>
+                  )}
+                  
+                  <div className="mt-2 flex items-center gap-3 flex-wrap">
+                    <span className="flex items-center rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                      Emergency Services
+                    </span>
+                    
+                    {hospital.isOpen !== undefined && (
+                      <span className={`flex items-center rounded-full ${hospital.isOpen ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'} px-2 py-1 text-xs font-medium`}>
+                        {hospital.isOpen ? 'Open Now' : 'Closed'}
+                      </span>
+                    )}
+                    
+                    {hospital.rating && (
+                      <span className="flex items-center text-xs">
+                        Rating: {hospital.rating.toFixed(1)} ★
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="mt-3 flex gap-2">
                     <Button 
                       size="sm" 
                       variant="outline" 
                       className="flex items-center gap-1 text-xs"
-                      onClick={() => window.location.href = `tel:${hospital.phone.replace(/[^\d+]/g, '')}`}
+                      onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital.name)}&query_place_id=${hospital.id}`)}
                     >
-                      <Phone className="h-3 w-3" /> Call
+                      <Navigation className="h-3 w-3" /> Directions
                     </Button>
-                  )}
+                    
+                    {hospital.phone && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex items-center gap-1 text-xs"
+                        onClick={() => window.location.href = `tel:${hospital.phone.replace(/[^\d+]/g, '')}`}
+                      >
+                        <Phone className="h-3 w-3" /> Call
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <AlertCircle className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-            <p className="text-gray-600">No hospitals found nearby</p>
-            <p className="text-sm text-gray-500 mt-1">Please check your location settings or try again</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <AlertCircle className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+              <p className="text-gray-600">No hospitals found nearby</p>
+              <p className="text-sm text-gray-500 mt-1">Please check your location settings or try again</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </GoogleMapsLoader>
   );
 };
 
