@@ -83,7 +83,40 @@ export function useLocation(): LocationHookResult {
 
   const fetchAddressFromCoordinates = async (latitude: number, longitude: number): Promise<string | null> => {
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+      // Check if Google Maps API is available
+      if (window.google?.maps?.Geocoder) {
+        const geocoder = new google.maps.Geocoder();
+        
+        return new Promise((resolve) => {
+          geocoder.geocode(
+            { location: { lat: latitude, lng: longitude } },
+            (results, status) => {
+              if (status === "OK" && results && results[0]) {
+                resolve(results[0].formatted_address);
+              } else {
+                // Fallback to Nominatim if Google Geocoding fails
+                fetchAddressFromNominatim(latitude, longitude)
+                  .then(address => resolve(address));
+              }
+            }
+          );
+        });
+      } else {
+        // Fallback to Nominatim if Google Maps API is not available
+        return fetchAddressFromNominatim(latitude, longitude);
+      }
+    } catch (error) {
+      console.error("Error fetching address:", error);
+      return null;
+    }
+  };
+  
+  // Fallback address lookup using Nominatim
+  const fetchAddressFromNominatim = async (latitude: number, longitude: number): Promise<string | null> => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+      );
       const data = await response.json();
       
       if (data && data.display_name) {
@@ -91,7 +124,7 @@ export function useLocation(): LocationHookResult {
       }
       return null;
     } catch (error) {
-      console.error("Error fetching address:", error);
+      console.error("Error fetching address from Nominatim:", error);
       return null;
     }
   };
