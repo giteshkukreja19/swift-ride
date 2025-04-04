@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Navigation } from 'lucide-react';
+import { MapPin, Navigation, AlertCircle } from 'lucide-react';
 
 // Import the Google Maps types
 import '@/types/google-maps';
@@ -14,47 +14,58 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
     // Skip if no location or Google Maps hasn't loaded
-    if (!location || !mapRef.current || !window.google?.maps) return;
+    if (!location || !mapRef.current) return;
+    
+    if (!window.google?.maps) {
+      setMapError("Google Maps failed to load. Please check your API key or try again later.");
+      return;
+    }
 
-    // Initialize map
-    const googleMap = new google.maps.Map(mapRef.current, {
-      center: { lat: location.lat, lng: location.lng },
-      zoom: 15,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: true,
-      zoomControl: true,
-    });
-    
-    setMap(googleMap);
-    
-    // Add marker for user location
-    const userMarker = new google.maps.Marker({
-      position: { lat: location.lat, lng: location.lng },
-      map: googleMap,
-      title: 'Your Location',
-      icon: {
-        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-        scaledSize: new google.maps.Size(40, 40),
-      },
-    });
-    
-    setMarker(userMarker);
-    
-    // Add info window with "Your Location" text
-    const infoWindow = new google.maps.InfoWindow({
-      content: '<div class="p-2"><strong>Your Location</strong></div>',
-    });
-    
-    userMarker.addListener('click', () => {
+    try {
+      // Initialize map
+      const googleMap = new google.maps.Map(mapRef.current, {
+        center: { lat: location.lat, lng: location.lng },
+        zoom: 15,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: true,
+        zoomControl: true,
+      });
+      
+      setMap(googleMap);
+      
+      // Add marker for user location
+      const userMarker = new google.maps.Marker({
+        position: { lat: location.lat, lng: location.lng },
+        map: googleMap,
+        title: 'Your Location',
+        icon: {
+          url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+          scaledSize: new google.maps.Size(40, 40),
+        },
+      });
+      
+      setMarker(userMarker);
+      
+      // Add info window with "Your Location" text
+      const infoWindow = new google.maps.InfoWindow({
+        content: '<div class="p-2"><strong>Your Location</strong></div>',
+      });
+      
+      userMarker.addListener('click', () => {
+        infoWindow.open(googleMap, userMarker);
+      });
+      
+      // Open info window by default
       infoWindow.open(googleMap, userMarker);
-    });
-    
-    // Open info window by default
-    infoWindow.open(googleMap, userMarker);
+    } catch (error) {
+      console.error("Error initializing Google Maps:", error);
+      setMapError("Error displaying map. Please try refreshing the page.");
+    }
     
     return () => {
       // Cleanup
@@ -77,7 +88,19 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
           {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
         </span>
       </h3>
-      <div className="rounded-md overflow-hidden h-[250px] bg-gray-100" ref={mapRef}></div>
+      
+      {mapError ? (
+        <div className="rounded-md overflow-hidden h-[250px] bg-gray-100 flex items-center justify-center">
+          <div className="text-center p-4">
+            <AlertCircle className="mx-auto h-10 w-10 text-red-500 mb-2" />
+            <p className="text-red-600 font-medium">{mapError}</p>
+            <p className="text-sm text-gray-500 mt-1">Please check your Google Maps API key</p>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-md overflow-hidden h-[250px] bg-gray-100" ref={mapRef}></div>
+      )}
+      
       <div className="flex justify-between items-center mt-2">
         <p className="text-xs text-gray-500">
           Your precise location will be shared when requesting emergency services.

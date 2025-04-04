@@ -9,13 +9,15 @@ interface MapProps {
   className?: string;
 }
 
-// Temporary Google Maps API key input component
+// Improved Google Maps API key input component
 const GoogleMapsKeyInput = ({ onKeySubmit }: { onKeySubmit: (key: string) => void }) => {
   const [apiKey, setApiKey] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (apiKey.trim()) {
+      setIsSubmitting(true);
       onKeySubmit(apiKey);
       // Save key to localStorage for future use
       localStorage.setItem('googleMapsApiKey', apiKey);
@@ -29,6 +31,14 @@ const GoogleMapsKeyInput = ({ onKeySubmit }: { onKeySubmit: (key: string) => voi
         To use the map feature, please enter your Google Maps API key. 
         You can get one from <a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noreferrer" className="text-swift-red hover:underline">Google Cloud Console</a>.
       </p>
+      <div className="p-3 mb-4 bg-yellow-50 border-l-4 border-yellow-400 text-sm text-yellow-800">
+        <p><strong>Important:</strong> Make sure to:</p>
+        <ul className="list-disc pl-5 mt-2 space-y-1">
+          <li>Enable the Maps JavaScript API and Places API in your project</li>
+          <li>Configure proper API restrictions (HTTP referrers)</li>
+          <li>Use a proper API key format (not a project number)</li>
+        </ul>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
@@ -39,9 +49,17 @@ const GoogleMapsKeyInput = ({ onKeySubmit }: { onKeySubmit: (key: string) => voi
         />
         <button 
           type="submit" 
-          className="bg-swift-red hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-swift-red hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
+          disabled={isSubmitting}
         >
-          Save API Key
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Validating...
+            </>
+          ) : (
+            'Save API Key'
+          )}
         </button>
       </form>
     </div>
@@ -54,6 +72,7 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
   const map = useRef<google.maps.Map | null>(null);
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string | null>(localStorage.getItem('googleMapsApiKey'));
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const [selectedAmbulance, setSelectedAmbulance] = useState<number | null>(null);
 
@@ -74,20 +93,25 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
       return;
     }
     
-    // Create script element
+    // Reset error state
+    setMapError(null);
+    
+    // Create script element with async attribute
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
     
     // Handle script loading
     script.onload = () => {
+      console.log('Google Maps script loaded successfully');
       setMapLoaded(true);
     };
     
     // Handle script errors
     script.onerror = () => {
       console.error('Google Maps script failed to load');
+      setMapError('Failed to load Google Maps. Please check your API key.');
       localStorage.removeItem('googleMapsApiKey');
       setGoogleMapsApiKey(null);
     };
@@ -97,152 +121,162 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
     
     // Cleanup
     return () => {
-      document.head.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, [googleMapsApiKey]);
 
   // Initialize map when script is loaded
   useEffect(() => {
     if (!mapLoaded || !mapContainer.current || !googleMapsApiKey || !window.google?.maps) return;
-
-    // Create the map
-    map.current = new google.maps.Map(mapContainer.current, {
-      center: { lat: 40.7, lng: -74.0 }, // Default to New York
-      zoom: 10,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: true,
-      zoomControl: true,
-    });
     
-    // Add custom controls
-    const locationButton = document.createElement("button");
-    locationButton.innerHTML = '<div class="flex items-center justify-center w-8 h-8"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="5" y1="12" x2="2" y2="12"/><line x1="22" y1="12" x2="19" y2="12"/></svg></div>';
-    locationButton.className = "bg-white rounded shadow-md hover:bg-gray-100 m-2";
-    locationButton.title = "Find Your Location";
-    
-    map.current.controls[google.maps.ControlPosition.RIGHT_TOP].push(locationButton);
-    
-    locationButton.addEventListener("click", () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const pos = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            
-            // Add a marker at the user's location
-            new google.maps.Marker({
-              position: pos,
-              map: map.current!,
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 10,
-                fillColor: "#4285F4",
-                fillOpacity: 1,
-                strokeColor: "#ffffff",
-                strokeWeight: 2,
-              },
-              title: "Your Location",
-            });
-            
-            map.current!.setCenter(pos);
-            map.current!.setZoom(14);
-          },
-          () => {
-            console.error("Error: The Geolocation service failed.");
-          }
-        );
-      } else {
-        console.error("Error: Your browser doesn't support geolocation.");
-      }
-    });
-
+    try {
+      // Create the map
+      map.current = new google.maps.Map(mapContainer.current, {
+        center: { lat: 40.7, lng: -74.0 }, // Default to New York
+        zoom: 10,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: true,
+        zoomControl: true,
+      });
+      
+      // Add custom controls
+      const locationButton = document.createElement("button");
+      locationButton.innerHTML = '<div class="flex items-center justify-center w-8 h-8"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="5" y1="12" x2="2" y2="12"/><line x1="22" y1="12" x2="19" y2="12"/></svg></div>';
+      locationButton.className = "bg-white rounded shadow-md hover:bg-gray-100 m-2";
+      locationButton.title = "Find Your Location";
+      
+      map.current.controls[google.maps.ControlPosition.RIGHT_TOP].push(locationButton);
+      
+      locationButton.addEventListener("click", () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const pos = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              };
+              
+              // Add a marker at the user's location
+              new google.maps.Marker({
+                position: pos,
+                map: map.current!,
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 10,
+                  fillColor: "#4285F4",
+                  fillOpacity: 1,
+                  strokeColor: "#ffffff",
+                  strokeWeight: 2,
+                },
+                title: "Your Location",
+              });
+              
+              map.current!.setCenter(pos);
+              map.current!.setZoom(14);
+            },
+            () => {
+              console.error("Error: The Geolocation service failed.");
+            }
+          );
+        } else {
+          console.error("Error: Your browser doesn't support geolocation.");
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing Google Maps:', error);
+      setMapError('Error initializing Google Maps. Please reload the page or try a different API key.');
+    }
   }, [mapLoaded, googleMapsApiKey]);
 
   // Add markers for ambulances
   useEffect(() => {
     if (!map.current || !ambulances || isLoading || !mapLoaded || !window.google?.maps) return;
 
-    // Remove existing markers
-    markersRef.current.forEach(marker => marker.setMap(null));
-    markersRef.current = [];
+    try {
+      // Remove existing markers
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
 
-    // Add new markers
-    ambulances.forEach(ambulance => {
-      // Set marker color based on status
-      const markerColor = ambulance.status === 'available' ? 'green' : 
-                          ambulance.status === 'busy' ? 'red' : 'orange';
-      
-      // Create marker for ambulance
-      const marker = new google.maps.Marker({
-        position: { lat: ambulance.lat, lng: ambulance.lng },
-        map: map.current!,
-        title: ambulance.vehicleNumber,
-        icon: {
-          url: `https://maps.google.com/mapfiles/ms/icons/${markerColor}-dot.png`,
-          scaledSize: new google.maps.Size(32, 32),
-        }
-      });
-      
-      // Create info window content
-      const contentString = `
-        <div class="p-2">
-          <h3 class="font-bold text-lg">${ambulance.vehicleNumber}</h3>
-          <p class="text-sm mb-1">Status: <span style="color:${
-            ambulance.status === 'available' ? 'green' : 
-            ambulance.status === 'busy' ? 'red' : 'orange'
-          }">${ambulance.status}</span></p>
-          <p class="text-sm">Type: ${ambulance.vehicleType}</p>
-          <p class="text-sm">Equipment: ${ambulance.equipmentLevel}</p>
-          ${ambulance.currentSpeed ? `<p class="text-sm">Speed: ${ambulance.currentSpeed} mph</p>` : ''}
-          ${ambulance.currentDestination ? `<p class="text-sm">Destination: ${ambulance.currentDestination}</p>` : ''}
-          ${ambulance.estimatedArrivalTime ? `<p class="text-sm">ETA: ${ambulance.estimatedArrivalTime}</p>` : ''}
-        </div>
-      `;
-      
-      // Create info window
-      const infoWindow = new google.maps.InfoWindow({
-        content: contentString,
-      });
-      
-      // Add click listener to marker
-      marker.addListener("click", () => {
-        // Close all open info windows
-        markersRef.current.forEach(m => {
-          const mw = m.get('infoWindow');
-          if (mw) mw.close();
+      // Add new markers
+      ambulances.forEach(ambulance => {
+        // Set marker color based on status
+        const markerColor = ambulance.status === 'available' ? 'green' : 
+                            ambulance.status === 'busy' ? 'red' : 'yellow';
+        
+        // Create marker for ambulance
+        const marker = new google.maps.Marker({
+          position: { lat: ambulance.lat, lng: ambulance.lng },
+          map: map.current!,
+          title: ambulance.vehicleNumber,
+          icon: {
+            url: `https://maps.google.com/mapfiles/ms/icons/${markerColor}-dot.png`,
+            scaledSize: new google.maps.Size(32, 32),
+          }
         });
         
-        infoWindow.open(map.current!, marker);
-        setSelectedAmbulance(ambulance.id);
+        // Create info window content
+        const contentString = `
+          <div class="p-2">
+            <h3 class="font-bold text-lg">${ambulance.vehicleNumber}</h3>
+            <p class="text-sm mb-1">Status: <span style="color:${
+              ambulance.status === 'available' ? 'green' : 
+              ambulance.status === 'busy' ? 'red' : 'orange'
+            }">${ambulance.status}</span></p>
+            <p class="text-sm">Type: ${ambulance.vehicleType}</p>
+            <p class="text-sm">Equipment: ${ambulance.equipmentLevel}</p>
+            ${ambulance.currentSpeed ? `<p class="text-sm">Speed: ${ambulance.currentSpeed} mph</p>` : ''}
+            ${ambulance.currentDestination ? `<p class="text-sm">Destination: ${ambulance.currentDestination}</p>` : ''}
+            ${ambulance.estimatedArrivalTime ? `<p class="text-sm">ETA: ${ambulance.estimatedArrivalTime}</p>` : ''}
+          </div>
+        `;
         
-        // Center and zoom the map
-        map.current!.panTo(marker.getPosition()!);
-        map.current!.setZoom(14);
+        // Create info window
+        const infoWindow = new google.maps.InfoWindow({
+          content: contentString,
+        });
+        
+        // Add click listener to marker
+        marker.addListener("click", () => {
+          // Close all open info windows
+          markersRef.current.forEach(m => {
+            const mw = m.get('infoWindow');
+            if (mw) mw.close();
+          });
+          
+          infoWindow.open(map.current!, marker);
+          setSelectedAmbulance(ambulance.id);
+          
+          // Center and zoom the map
+          map.current!.panTo(marker.getPosition()!);
+          map.current!.setZoom(14);
+        });
+        
+        // Store the info window with the marker for later access
+        marker.set('infoWindow', infoWindow);
+        
+        // Store marker in ref
+        markersRef.current.push(marker);
       });
       
-      // Store the info window with the marker for later access
-      marker.set('infoWindow', infoWindow);
-      
-      // Store marker in ref
-      markersRef.current.push(marker);
-    });
-    
-    // Fit bounds to show all markers if no ambulance is selected
-    if (ambulances.length > 0 && !selectedAmbulance && window.google?.maps) {
-      const bounds = new google.maps.LatLngBounds();
-      ambulances.forEach(ambulance => {
-        bounds.extend({ lat: ambulance.lat, lng: ambulance.lng });
-      });
-      map.current!.fitBounds(bounds);
-      
-      // Don't zoom in too far
-      const listener = google.maps.event.addListener(map.current!, 'idle', () => {
-        if (map.current!.getZoom() > 15) map.current!.setZoom(15);
-        google.maps.event.removeListener(listener);
-      });
+      // Fit bounds to show all markers if no ambulance is selected
+      if (ambulances.length > 0 && !selectedAmbulance && window.google?.maps) {
+        const bounds = new google.maps.LatLngBounds();
+        ambulances.forEach(ambulance => {
+          bounds.extend({ lat: ambulance.lat, lng: ambulance.lng });
+        });
+        map.current!.fitBounds(bounds);
+        
+        // Don't zoom in too far
+        const listener = google.maps.event.addListener(map.current!, 'idle', () => {
+          if (map.current!.getZoom() > 15) map.current!.setZoom(15);
+          google.maps.event.removeListener(listener);
+        });
+      }
+    } catch (error) {
+      console.error('Error adding ambulance markers:', error);
     }
   }, [ambulances, isLoading, selectedAmbulance, mapLoaded]);
 
@@ -268,6 +302,23 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
 
   return (
     <div className={`relative ${className}`}>
+      {mapError && (
+        <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+          <p className="font-bold">Error</p>
+          <p>{mapError}</p>
+          <button 
+            onClick={() => {
+              localStorage.removeItem('googleMapsApiKey');
+              setGoogleMapsApiKey(null);
+              setMapError(null);
+            }}
+            className="mt-2 text-sm underline"
+          >
+            Try a different API key
+          </button>
+        </div>
+      )}
+      
       <div ref={mapContainer} className="w-full h-[500px] rounded-lg shadow-lg" />
       
       {/* Map Controls */}
