@@ -8,8 +8,8 @@ import { UseFormReturn } from 'react-hook-form';
 import { createEmergencyRequest } from '@/utils/emergencyService';
 
 interface EmergencyRequestButtonProps {
-  form: UseFormReturn<any>;
-  userLocation: { lat: number; lng: number } | null;
+  form?: UseFormReturn<any>;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, userLocation }) => {
@@ -21,6 +21,12 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
     setIsLoading(true);
     
     try {
+      // If form is not provided, redirect to emergency page
+      if (!form) {
+        navigate('/emergency');
+        return;
+      }
+      
       // Validate required fields
       const name = form.getValues('name');
       const phone = form.getValues('phone');
@@ -95,7 +101,7 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
       console.error('Emergency request error:', error);
       toast({
         title: "Error",
-        description: "Failed to process emergency request. Please try again or call emergency services directly.",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
       });
     } finally {

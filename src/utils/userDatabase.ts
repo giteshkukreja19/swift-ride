@@ -25,9 +25,16 @@ export interface EmergencyRequest {
     lat: number;
     lng: number;
   };
-  status: 'pending' | 'dispatched' | 'arrived' | 'completed';
+  address?: string;
+  patientName?: string;
+  phoneNumber?: string;
+  bloodGroup?: string;
+  notes?: string;
+  status: 'pending' | 'dispatched' | 'arrived' | 'completed' | 'cancelled';
   assignedAmbulanceId?: string;
   estimatedArrivalTime?: string;
+  distanceToBeTravelled?: number;
+  nearestHospital?: string;
 }
 
 // Database interface
@@ -152,7 +159,10 @@ export const createEmergencyRequest = (userId: string, location: {lat: number, l
     location,
     status: 'dispatched',
     assignedAmbulanceId: `amb-${Math.floor(Math.random() * 1000)}`,
-    estimatedArrivalTime: eta.toISOString()
+    estimatedArrivalTime: eta.toISOString(),
+    patientName: user.name,
+    phoneNumber: user.phone,
+    bloodGroup: user.bloodGroup,
   };
   
   // Add request to database
@@ -174,14 +184,14 @@ export const getUserActiveRequests = (userId: string): EmergencyRequest[] => {
   const db = getDatabase();
   return db.emergencyRequests.filter(req => 
     req.userId === userId && 
-    ['pending', 'dispatched'].includes(req.status)
+    ['pending', 'dispatched'].includes(req.status as string)
   );
 };
 
 // Update emergency request status
 export const updateEmergencyRequestStatus = (
   requestId: string, 
-  status: 'pending' | 'dispatched' | 'arrived' | 'completed'
+  status: 'pending' | 'dispatched' | 'arrived' | 'completed' | 'cancelled'
 ): EmergencyRequest | null => {
   const db = getDatabase();
   const requestIndex = db.emergencyRequests.findIndex(req => req.id === requestId);
@@ -231,3 +241,4 @@ export const createEmergencyUser = (userData: Partial<UserData>): UserData => {
   
   return addUser(newUser);
 };
+
