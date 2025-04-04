@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Navigation } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { UseFormReturn } from 'react-hook-form';
-import { createEmergencyUser } from '@/utils/userDatabase';
+import { createEmergencyRequest } from '@/utils/emergencyService';
 
 interface EmergencyRequestButtonProps {
   form: UseFormReturn<any>;
@@ -26,6 +26,7 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
       const phone = form.getValues('phone');
       const bloodGroup = form.getValues('bloodGroup');
       const address = form.getValues('address');
+      const notes = form.getValues('notes');
       
       let isValid = true;
       let missingFields = [];
@@ -64,20 +65,22 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
         return;
       }
       
-      // All required fields are present, proceed with emergency access
-      
-      // Save emergency user data
-      const emergencyUser = createEmergencyUser({
+      // All required fields are present, proceed with emergency request
+      const emergencyRequest = createEmergencyRequest({
         name,
-        email: form.getValues('email') || `emergency_${Date.now()}@swiftride.temp`,
         phone,
         bloodGroup,
         address,
+        notes,
         location: userLocation,
       });
       
-      // Store emergency user data for the session
-      localStorage.setItem('emergency_user', JSON.stringify(emergencyUser));
+      if (!emergencyRequest) {
+        throw new Error('Failed to create emergency request');
+      }
+      
+      // Store emergency request data for the session
+      localStorage.setItem('current_emergency_request', JSON.stringify(emergencyRequest));
       
       // Show success toast
       toast({
@@ -89,6 +92,7 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
       // Navigate to ambulance tracking page
       navigate('/tracking');
     } catch (error) {
+      console.error('Emergency request error:', error);
       toast({
         title: "Error",
         description: "Failed to process emergency request. Please try again or call emergency services directly.",
@@ -102,7 +106,7 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
   return (
     <Button 
       onClick={handleEmergencyAccess}
-      className="w-full emergency-gradient text-white hover:bg-red-700 flex items-center justify-center"
+      className="w-full emergency-gradient text-white hover:bg-red-700 flex items-center justify-center py-6 text-lg font-bold"
       variant="destructive"
       disabled={isLoading}
     >
@@ -112,11 +116,11 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          Sharing Location...
+          Processing Request...
         </>
       ) : (
         <>
-          <Navigation className="mr-2 h-5 w-5" />
+          <Navigation className="mr-2 h-6 w-6" />
           Share Location & Request Ambulance
         </>
       )}

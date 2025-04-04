@@ -1,21 +1,26 @@
 
 import { useState, useEffect } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface LocationHookResult {
   userLocation: { lat: number; lng: number } | null;
   locationStatus: 'idle' | 'loading' | 'success' | 'error';
   fetchAddressFromCoordinates: (latitude: number, longitude: number) => Promise<string | null>;
+  retryFetchLocation: () => void;
+  errorMessage: string | null;
 }
 
 export function useLocation(): LocationHookResult {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const fetchLocation = () => {
     if (navigator.geolocation) {
       setLocationStatus('loading');
+      setErrorMessage(null);
+      
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation({
@@ -27,22 +32,54 @@ export function useLocation(): LocationHookResult {
         (error) => {
           console.error("Error getting location:", error);
           setLocationStatus('error');
+          
+          let message = "Unable to get your location.";
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              message = "Location permission denied. Please enable location access in your browser settings.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              message = "Location information is unavailable. Please try again.";
+              break;
+            case error.TIMEOUT:
+              message = "Request to get location timed out. Please try again.";
+              break;
+            default:
+              message = "An unknown error occurred while getting location.";
+              break;
+          }
+          
+          setErrorMessage(message);
+          
           toast({
             title: "Location Error",
-            description: "Unable to get your location. Please allow location access or enter your address manually.",
+            description: message,
             variant: "destructive",
           });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     } else {
       setLocationStatus('error');
+      const message = "Geolocation is not supported by your browser. Please enter your address manually.";
+      setErrorMessage(message);
+      
       toast({
         title: "Location Not Supported",
-        description: "Geolocation is not supported by your browser. Please enter your address manually.",
+        description: message,
         variant: "destructive",
       });
     }
-  }, [toast]);
+  };
+
+  useEffect(() => {
+    fetchLocation();
+  }, []);
 
   const fetchAddressFromCoordinates = async (latitude: number, longitude: number): Promise<string | null> => {
     try {
@@ -59,5 +96,15 @@ export function useLocation(): LocationHookResult {
     }
   };
 
-  return { userLocation, locationStatus, fetchAddressFromCoordinates };
+  const retryFetchLocation = () => {
+    fetchLocation();
+  };
+
+  return { 
+    userLocation, 
+    locationStatus, 
+    fetchAddressFromCoordinates,
+    retryFetchLocation,
+    errorMessage 
+  };
 }
