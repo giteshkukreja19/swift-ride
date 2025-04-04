@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,46 +10,23 @@ import { LogIn } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import LoginForm from '@/components/LoginForm';
-import LocationMap from '@/components/LocationMap';
 import EmergencyRequestButton from '@/components/EmergencyRequestButton';
-import { useLocation } from '@/hooks/use-location';
 
-// Define form schema with Zod
+// Define form schema with Zod - simplified for login
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Please enter your full name" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
-  phone: z.string().min(10, { message: "Please enter a valid phone number" }),
-  bloodGroup: z.string().min(1, { message: "Please select your blood group" }),
-  address: z.string().min(5, { message: "Please enter your address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
 const Login = () => {
-  const { userLocation, locationStatus, fetchAddressFromCoordinates } = useLocation();
-  
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
       email: '',
-      phone: '',
-      bloodGroup: '',
-      address: '',
       password: '',
     },
   });
-
-  // Update address field when location is found
-  useEffect(() => {
-    if (locationStatus === 'success' && userLocation) {
-      fetchAddressFromCoordinates(userLocation.lat, userLocation.lng).then(address => {
-        if (address) {
-          form.setValue('address', address);
-        }
-      });
-    }
-  }, [locationStatus, userLocation, fetchAddressFromCoordinates, form]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -60,13 +37,11 @@ const Login = () => {
             <div className="flex justify-center mb-2">
               <div className="h-16 w-16 rounded-full bg-swift-red flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
-                  <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
-                  <path d="M3 9h11v7c0 .55 .45 1 1 1h2"></path>
-                  <path d="M6 8v-3a1 1 0 0 1 1 -1h2"></path>
-                  <path d="M15 8h4a1 1 0 0 1 1 1v3.5"></path>
-                  <path d="M14 11v4h4"></path>
-                  <path d="M14 8v3"></path>
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                  <line x1="6" y1="1" x2="6" y2="4"></line>
+                  <line x1="10" y1="1" x2="10" y2="4"></line>
+                  <line x1="14" y1="1" x2="14" y2="4"></line>
                 </svg>
               </div>
             </div>
@@ -85,17 +60,10 @@ const Login = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <LoginForm 
-                form={form} 
-                locationStatus={locationStatus}
-                userLocation={userLocation}
-              />
+              <LoginForm form={form} />
               
               <div className="mt-6">
-                <EmergencyRequestButton 
-                  form={form}
-                  userLocation={userLocation}
-                />
+                <EmergencyRequestButton />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row justify-between gap-2">
@@ -107,11 +75,6 @@ const Login = () => {
               </Button>
             </CardFooter>
           </Card>
-          
-          <LocationMap 
-            location={userLocation} 
-            className="mt-6"
-          />
           
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
