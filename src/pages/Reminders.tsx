@@ -52,7 +52,7 @@ const Reminders = () => {
     toast({
       title: "Reminder Added",
       description: "Your medication reminder has been scheduled",
-      variant: "success",
+      variant: "default"  // Changed from "success" to "default" which is allowed
     });
     
     setNewReminder({
