@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Clock, MapPin, Navigation, Phone, AlertCircle } from 'lucide-react';
@@ -6,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { useLocation } from '@/hooks/use-location';
 import { useToast } from '@/hooks/use-toast';
 import GoogleMapsLoader from './GoogleMapsLoader';
-import '@/types/google-maps';
 
 interface Hospital {
   id: string;
@@ -39,23 +37,18 @@ const NearbyHospitals = () => {
       setError(null);
       
       try {
-        // Create PlacesService instance (requires a DOM element)
         const mapDiv = document.createElement('div');
         const service = new google.maps.places.PlacesService(mapDiv);
         
-        // Create request for nearby hospitals
         const request = {
           location: new google.maps.LatLng(userLocation.lat, userLocation.lng),
           rankBy: google.maps.places.RankBy.DISTANCE,
           type: 'hospital'
         };
         
-        // Perform nearby search
         service.nearbySearch(request, (results, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-            // Process and format results
             const hospitalResults = results.slice(0, 6).map(place => {
-              // Calculate rough distance in miles (simplified calculation)
               const distance = calculateDistance(
                 userLocation.lat, 
                 userLocation.lng, 
@@ -85,7 +78,6 @@ const NearbyHospitals = () => {
               variant: "destructive"
             });
             
-            // Fallback to some default data if API fails
             setHospitals([]);
           }
           
@@ -106,9 +98,8 @@ const NearbyHospitals = () => {
     fetchNearbyHospitals();
   }, [userLocation, toast]);
 
-  // Simple distance calculation using Haversine formula
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 3958.8; // Earth radius in miles
+    const R = 3958.8;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     
@@ -118,11 +109,11 @@ const NearbyHospitals = () => {
       Math.sin(dLon/2) * Math.sin(dLon/2);
       
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c; // Distance in miles
+    const distance = R * c;
     
     return distance;
   };
-  
+
   return (
     <GoogleMapsLoader>
       <Card className="w-full">
