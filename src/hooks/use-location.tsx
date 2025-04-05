@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import '@/types/google-maps';
 
 interface LocationHookResult {
   userLocation: { lat: number; lng: number } | null;
@@ -84,37 +83,15 @@ export function useLocation(): LocationHookResult {
 
   const fetchAddressFromCoordinates = async (latitude: number, longitude: number): Promise<string | null> => {
     try {
-      // Check if Google Maps API is available
-      if (window.google?.maps?.Geocoder) {
-        const geocoder = new google.maps.Geocoder();
-        
-        return new Promise((resolve) => {
-          geocoder.geocode(
-            { location: { lat: latitude, lng: longitude } },
-            (results, status) => {
-              if (status === "OK" && results && results[0]) {
-                resolve(results[0].formatted_address);
-              } else {
-                console.log("Google geocoding failed, falling back to Nominatim");
-                // Fallback to Nominatim if Google Geocoding fails
-                fetchAddressFromNominatim(latitude, longitude)
-                  .then(address => resolve(address));
-              }
-            }
-          );
-        });
-      } else {
-        console.log("Google Maps not available, using Nominatim");
-        // Fallback to Nominatim if Google Maps API is not available
-        return fetchAddressFromNominatim(latitude, longitude);
-      }
+      // Use Nominatim for geocoding
+      return fetchAddressFromNominatim(latitude, longitude);
     } catch (error) {
       console.error("Error fetching address:", error);
       return null;
     }
   };
   
-  // Fallback address lookup using Nominatim
+  // Address lookup using Nominatim
   const fetchAddressFromNominatim = async (latitude: number, longitude: number): Promise<string | null> => {
     try {
       const response = await fetch(
