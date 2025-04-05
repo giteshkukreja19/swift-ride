@@ -10,7 +10,11 @@ declare namespace google {
       getBounds(): LatLngBounds;
       getCenter(): LatLng;
       getZoom(): number;
+      fitBounds(bounds: LatLngBounds): void;
       addListener(eventName: string, handler: Function): MapsEventListener;
+      controls: {
+        [index: number]: MVCArray<any>;
+      };
     }
 
     class LatLng {
@@ -38,6 +42,8 @@ declare namespace google {
       setTitle(title: string): void;
       addListener(eventName: string, handler: Function): MapsEventListener;
       getPosition(): LatLng;
+      get(key: string): any;
+      set(key: string, value: any): void;
     }
 
     class InfoWindow {
@@ -171,6 +177,17 @@ declare namespace google {
       strokeWeight?: number;
     }
 
+    class MVCArray<T> {
+      constructor(array?: T[]);
+      getArray(): T[];
+      getAt(i: number): T;
+      insertAt(i: number, elem: T): void;
+      removeAt(i: number): T;
+      setAt(i: number, elem: T): void;
+      push(elem: T): number;
+      pop(): T;
+    }
+
     type GeocoderStatus = 'OK' | 'ZERO_RESULTS' | 'OVER_QUERY_LIMIT' | 'REQUEST_DENIED' | 'INVALID_REQUEST' | 'UNKNOWN_ERROR';
 
     interface MVCObject {
@@ -180,6 +197,29 @@ declare namespace google {
 
     interface MapsEventListener {
       remove(): void;
+    }
+
+    class ControlPosition {
+      static TOP_LEFT: number;
+      static TOP_CENTER: number;
+      static TOP_RIGHT: number;
+      static LEFT_TOP: number;
+      static LEFT_CENTER: number;
+      static LEFT_BOTTOM: number;
+      static RIGHT_TOP: number;
+      static RIGHT_CENTER: number;
+      static RIGHT_BOTTOM: number;
+      static BOTTOM_LEFT: number;
+      static BOTTOM_CENTER: number;
+      static BOTTOM_RIGHT: number;
+    }
+
+    class SymbolPath {
+      static CIRCLE: number;
+      static FORWARD_CLOSED_ARROW: number;
+      static FORWARD_OPEN_ARROW: number;
+      static BACKWARD_CLOSED_ARROW: number;
+      static BACKWARD_OPEN_ARROW: number;
     }
 
     namespace places {
@@ -222,7 +262,19 @@ declare namespace google {
         DISTANCE = 1
       }
 
-      type PlacesServiceStatus = 'OK' | 'ZERO_RESULTS' | 'OVER_QUERY_LIMIT' | 'REQUEST_DENIED' | 'INVALID_REQUEST' | 'UNKNOWN_ERROR';
+      enum PlacesServiceStatus {
+        OK = 'OK',
+        ZERO_RESULTS = 'ZERO_RESULTS',
+        OVER_QUERY_LIMIT = 'OVER_QUERY_LIMIT',
+        REQUEST_DENIED = 'REQUEST_DENIED',
+        INVALID_REQUEST = 'INVALID_REQUEST',
+        UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+      }
+    }
+
+    namespace event {
+      function addListener(instance: any, eventName: string, handler: Function): MapsEventListener;
+      function removeListener(listener: MapsEventListener): void;
     }
   }
 }
