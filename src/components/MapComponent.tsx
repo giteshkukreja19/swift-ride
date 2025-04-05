@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { ambulanceService, Ambulance } from '@/services/ambulanceService';
+import { ambulanceService } from '@/services/ambulanceService';
 import { useQuery } from '@tanstack/react-query';
 import { Navigation, MapPin, LocateFixed } from 'lucide-react';
-import '@/types/google-maps';
 
 interface MapProps {
   className?: string;
@@ -19,7 +17,6 @@ const GoogleMapsKeyInput = ({ onKeySubmit }: { onKeySubmit: (key: string) => voi
     if (apiKey.trim()) {
       setIsSubmitting(true);
       onKeySubmit(apiKey);
-      // Save key to localStorage for future use
       localStorage.setItem('googleMapsApiKey', apiKey);
     }
   };

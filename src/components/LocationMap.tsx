@@ -1,10 +1,6 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { MapPin, Navigation, AlertCircle } from 'lucide-react';
 import GoogleMapsLoader from './GoogleMapsLoader';
-
-// Import the Google Maps types
-import '@/types/google-maps';
 
 interface LocationMapProps {
   location: { lat: number; lng: number } | null;
@@ -18,11 +14,9 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
   const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Skip if no location or Google Maps hasn't loaded
     if (!location || !mapRef.current || !window.google?.maps) return;
     
     try {
-      // Initialize map
       const googleMap = new google.maps.Map(mapRef.current, {
         center: { lat: location.lat, lng: location.lng },
         zoom: 15,
@@ -34,7 +28,6 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
       
       setMap(googleMap);
       
-      // Add marker for user location
       const userMarker = new google.maps.Marker({
         position: { lat: location.lat, lng: location.lng },
         map: googleMap,
@@ -47,7 +40,6 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
       
       setMarker(userMarker);
       
-      // Add info window with "Your Location" text
       const infoWindow = new google.maps.InfoWindow({
         content: '<div class="p-2"><strong>Your Location</strong></div>',
       });
@@ -56,7 +48,6 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
         infoWindow.open(googleMap, userMarker);
       });
       
-      // Open info window by default
       infoWindow.open(googleMap, userMarker);
     } catch (error) {
       console.error("Error initializing Google Maps:", error);
@@ -64,7 +55,6 @@ const LocationMap: React.FC<LocationMapProps> = ({ location, className }) => {
     }
     
     return () => {
-      // Cleanup
       if (marker) {
         marker.setMap(null);
       }
