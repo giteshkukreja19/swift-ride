@@ -1,4 +1,3 @@
-
 interface Hospital {
   id: string;
   name: string;
@@ -80,7 +79,6 @@ let hospitals: Hospital[] = [
 
 // Calculate distance between two points
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-  // Haversine formula to calculate distance between two points on a sphere
   const R = 6371; // Radius of the earth in km
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lng2 - lng1) * (Math.PI / 180);
@@ -164,4 +162,4 @@ export const hospitalService = {
   }
 };
 
-export type { Hospital, HospitalWithDistance };
+export type { Hospital };
