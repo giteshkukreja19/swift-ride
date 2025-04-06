@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ambulanceService } from '@/services/ambulanceService';
-import { hospitalService, Hospital } from '@/services/hospitalService';
+import { hospitalService, Hospital, HospitalWithDistance } from '@/services/hospitalService';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/hooks/use-location';
@@ -23,7 +23,7 @@ interface MapProps {
 const MapComponent: React.FC<MapProps> = ({ className }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [nearbyHospitals, setNearbyHospitals] = useState<(Hospital & { distance: number })[]>([]);
+  const [nearbyHospitals, setNearbyHospitals] = useState<HospitalWithDistance[]>([]);
   const { userLocation } = useLocation();
   const { toast } = useToast();
   
