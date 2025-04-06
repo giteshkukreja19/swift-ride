@@ -18,6 +18,7 @@ import EmergencyRequest from "./pages/EmergencyRequest";
 import NotFound from "./pages/NotFound";
 import PremiumPage from "./pages/PremiumPage";
 import Reminders from "./pages/Reminders";
+import AppDownload from "./pages/AppDownload";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,7 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/premium" element={<PremiumPage />} />
+              <Route path="/app-download" element={<AppDownload />} />
               <Route 
                 path="/profile" 
                 element={
