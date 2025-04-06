@@ -2,22 +2,21 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Phone, Download } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 
 const EmergencyCTA = () => {
+  const navigate = useNavigate();
+  
   const handleDownloadApp = () => {
-    // For now, we'll use a placeholder URL for the APK
-    // In production, this should point to your actual APK download location
-    const apkDownloadUrl = "/downloads/swift-ride-rescue.apk";
-    
-    // Check if it's a mobile device
+    // For mobile devices, directly start the download
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent);
     
-    if (isMobile) {
-      // For mobile devices, directly start the download
-      window.location.href = apkDownloadUrl;
+    if (isMobile && /Android/i.test(navigator.userAgent)) {
+      // For Android mobile devices, directly start the APK download
+      window.location.href = '/downloads/swift-ride-rescue.apk';
     } else {
-      // For desktop, open a new window explaining how to download
-      window.open('/app-download', '_blank');
+      // For desktop or iOS, navigate to the app download instructions page
+      navigate('/app-download');
     }
   };
 
