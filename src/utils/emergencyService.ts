@@ -1,4 +1,5 @@
 import { UserData, getDatabase, saveDatabase } from './userDatabase';
+import { hospitalService } from '@/services/hospitalService';
 
 // Emergency request interface
 export interface EmergencyRequest {
@@ -78,19 +79,19 @@ export const createEmergencyRequest = (
   // Calculate simulated distance (for demo purposes)
   const distanceInKm = (Math.random() * 5 + 1).toFixed(1); // 1-6 km
   
-  // Mumbai hospitals for nearest hospital selection
-  const mumbaiHospitals = [
-    'Sushrut Hospital and Research Center',
-    'Das Multispeciality Hospital & ICCU',
-    'Zen Multi Specialty Hospital',
-    'Apollo Spectra Hospitals',
-    'Kolekar Multispecialty Hospital & ICCU',
-    'Sai Hospital'
-  ];
-  
-  // Select a random hospital from the Mumbai hospitals list
-  const randomHospitalIndex = Math.floor(Math.random() * mumbaiHospitals.length);
-  const nearestHospital = mumbaiHospitals[randomHospitalIndex];
+  // Find nearest hospital using our service
+  let nearestHospital = "Unknown Hospital";
+  try {
+    const hospital = hospitalService.findNearestHospital(
+      userData.location.lat, 
+      userData.location.lng
+    );
+    if (hospital) {
+      nearestHospital = hospital.name;
+    }
+  } catch (error) {
+    console.error("Error finding nearest hospital:", error);
+  }
   
   // Create new emergency request
   const newRequest: EmergencyRequest = {
