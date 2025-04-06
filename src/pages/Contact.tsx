@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -73,7 +72,7 @@ const ContactPage = () => {
                       <Phone className="text-swift-red w-6 h-6 mt-1" />
                       <div>
                         <h3 className="font-bold text-swift-dark">Phone</h3>
-                        <p className="text-gray-600">Emergency: 911</p>
+                        <p className="text-gray-600">Emergency: 102</p>
                         <p className="text-gray-600">Customer Service: (555) 123-4567</p>
                       </div>
                     </div>

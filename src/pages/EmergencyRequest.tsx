@@ -209,10 +209,10 @@ const EmergencyRequest = () => {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => window.location.href = 'tel:911'}
+                  onClick={() => window.location.href = 'tel:102'}
                   className="text-swift-red border-swift-red hover:bg-swift-red/10"
                 >
-                  Call Emergency (911)
+                  Call Emergency (102)
                 </Button>
               </CardFooter>
             </Card>

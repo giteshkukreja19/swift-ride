@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
@@ -60,7 +59,11 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start space-x-3">
                 <Phone size={20} className="text-swift-red flex-shrink-0 mt-1" />
-                <span className="text-gray-400">Emergency: 911<br/>Customer Service: (555) 123-4567</span>
+                <div>
+                  <h3 className="font-bold text-swift-dark">Phone</h3>
+                  <p className="text-gray-400">Emergency: 102</p>
+                  <p className="text-gray-400">Customer Service: (555) 123-4567</p>
+                </div>
               </li>
               <li className="flex items-start space-x-3">
                 <Mail size={20} className="text-swift-red flex-shrink-0 mt-1" />

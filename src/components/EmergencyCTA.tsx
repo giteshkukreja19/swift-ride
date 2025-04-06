@@ -16,7 +16,7 @@ const EmergencyCTA = () => {
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <Button size="lg" className="bg-white text-swift-red hover:bg-gray-100 text-lg px-8 py-6 rounded-md flex items-center gap-2">
             <Phone size={20} />
-            <span>Call Emergency: 911</span>
+            <span>Call Emergency: 102</span>
           </Button>
           <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-6 rounded-md flex items-center gap-2">
             <Download size={20} />
