@@ -5,82 +5,31 @@ import { Building2, MapPin, Navigation, Phone, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { useLocation } from '@/hooks/use-location';
 import { useToast } from '@/hooks/use-toast';
-
-interface Hospital {
-  id: string;
-  name: string;
-  distance: string;
-  address: string;
-  vicinity: string;
-  description?: string;
-}
+import { hospitalService, Hospital } from '@/services/hospitalService';
 
 const NearbyHospitals = () => {
   const { userLocation } = useLocation();
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [hospitals, setHospitals] = useState<(Hospital & { distance: number })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchNearbyHospitals = async () => {
+      if (!userLocation) return;
+      
       setIsLoading(true);
       setError(null);
       
       try {
-        // Mumbai, Chembur hospitals data
-        const mumbaiHospitals = [
-          {
-            id: 'hospital-1',
-            name: 'Sushrut Hospital and Research Center',
-            distance: '0.8',
-            address: 'Chembur, Mumbai',
-            vicinity: 'Chembur, Mumbai',
-            description: 'A multispeciality hospital offering a wide range of medical services with state-of-the-art facilities.'
-          },
-          {
-            id: 'hospital-2',
-            name: 'Das Multispeciality Hospital & ICCU',
-            distance: '1.2',
-            address: 'Chembur, Mumbai',
-            vicinity: 'Chembur, Mumbai',
-            description: 'Provides comprehensive medical and surgical care with an Intensive Coronary Care Unit.'
-          },
-          {
-            id: 'hospital-3',
-            name: 'Zen Multi Specialty Hospital',
-            distance: '2.5',
-            address: 'Chembur, Mumbai',
-            vicinity: 'Chembur, Mumbai',
-            description: 'Offers advanced healthcare services across various specialties with modern infrastructure.'
-          },
-          {
-            id: 'hospital-4',
-            name: 'Apollo Spectra Hospitals',
-            distance: '3.1',
-            address: 'Chembur, Mumbai',
-            vicinity: 'Chembur, Mumbai',
-            description: 'A renowned hospital providing specialized treatments with cutting-edge technology.'
-          },
-          {
-            id: 'hospital-5',
-            name: 'Kolekar Multispecialty Hospital & ICCU',
-            distance: '3.8',
-            address: 'Chembur, Mumbai',
-            vicinity: 'Chembur, Mumbai',
-            description: 'Delivers a range of medical services with intensive care facilities.'
-          },
-          {
-            id: 'hospital-6',
-            name: 'Sai Hospital',
-            distance: '4.2',
-            address: 'Chembur, Mumbai',
-            vicinity: 'Chembur, Mumbai',
-            description: 'A multi-speciality hospital known for its patient-centric approach and comprehensive care.'
-          }
-        ];
+        // Get nearby hospitals using our service
+        const nearbyHospitals = hospitalService.findNearbyHospitals(
+          userLocation.lat,
+          userLocation.lng,
+          10 // 10km radius
+        );
         
-        setHospitals(mumbaiHospitals);
+        setHospitals(nearbyHospitals);
         setError(null);
         
       } catch (error) {
@@ -125,7 +74,7 @@ const NearbyHospitals = () => {
                 <div className="flex justify-between">
                   <h3 className="font-medium">{hospital.name}</h3>
                   <span className="flex items-center text-sm text-gray-500">
-                    <Navigation className="mr-1 h-3 w-3" /> {hospital.distance} km
+                    <Navigation className="mr-1 h-3 w-3" /> {hospital.distance.toFixed(1)} km
                   </span>
                 </div>
                 
@@ -140,15 +89,40 @@ const NearbyHospitals = () => {
                   </div>
                 )}
                 
+                {hospital.phone && (
+                  <div className="mt-2 flex items-center text-sm text-gray-500">
+                    <Phone className="mr-1 h-3 w-3" />
+                    <span>{hospital.phone}</span>
+                  </div>
+                )}
+                
                 <div className="mt-3 flex gap-2">
                   <Button 
                     size="sm" 
                     variant="outline" 
                     className="flex items-center gap-1 text-xs"
-                    onClick={() => window.open(`https://www.openstreetmap.org/search?query=${encodeURIComponent(hospital.name + ' ' + hospital.address)}`)}
+                    onClick={() => {
+                      if (hospital.location) {
+                        window.open(
+                          `https://www.google.com/maps/dir/?api=1&destination=${hospital.location.lat},${hospital.location.lng}`,
+                          '_blank'
+                        );
+                      }
+                    }}
                   >
                     <Navigation className="h-3 w-3" /> Directions
                   </Button>
+                  
+                  {hospital.phone && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex items-center gap-1 text-xs"
+                      onClick={() => window.open(`tel:${hospital.phone}`)}
+                    >
+                      <Phone className="h-3 w-3" /> Call
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
