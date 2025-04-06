@@ -1,4 +1,3 @@
-
 import { UserData, getDatabase, saveDatabase } from './userDatabase';
 
 // Emergency request interface
@@ -79,6 +78,20 @@ export const createEmergencyRequest = (
   // Calculate simulated distance (for demo purposes)
   const distanceInKm = (Math.random() * 5 + 1).toFixed(1); // 1-6 km
   
+  // Mumbai hospitals for nearest hospital selection
+  const mumbaiHospitals = [
+    'Sushrut Hospital and Research Center',
+    'Das Multispeciality Hospital & ICCU',
+    'Zen Multi Specialty Hospital',
+    'Apollo Spectra Hospitals',
+    'Kolekar Multispecialty Hospital & ICCU',
+    'Sai Hospital'
+  ];
+  
+  // Select a random hospital from the Mumbai hospitals list
+  const randomHospitalIndex = Math.floor(Math.random() * mumbaiHospitals.length);
+  const nearestHospital = mumbaiHospitals[randomHospitalIndex];
+  
   // Create new emergency request
   const newRequest: EmergencyRequest = {
     id: requestId,
@@ -94,7 +107,7 @@ export const createEmergencyRequest = (
     assignedAmbulanceId: `amb-${Math.floor(Math.random() * 1000)}`,
     estimatedArrivalTime: eta.toISOString(),
     distanceToBeTravelled: parseFloat(distanceInKm),
-    nearestHospital: 'Central City Hospital' // Simulated data
+    nearestHospital
   };
   
   // Add request to database
