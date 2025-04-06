@@ -15,6 +15,11 @@ interface Hospital {
   types?: string[];
 }
 
+// Extended hospital type that includes distance
+export interface HospitalWithDistance extends Hospital {
+  distance: number;
+}
+
 // In-memory database for hospitals
 let hospitals: Hospital[] = [
   {
@@ -127,7 +132,7 @@ export const hospitalService = {
   },
 
   // Find nearby hospitals based on user location
-  findNearbyHospitals: (userLat: number, userLng: number, maxDistanceKm: number = 10): Hospital[] => {
+  findNearbyHospitals: (userLat: number, userLng: number, maxDistanceKm: number = 10): HospitalWithDistance[] => {
     return hospitals
       .map(hospital => ({
         ...hospital,
@@ -138,7 +143,7 @@ export const hospitalService = {
   },
 
   // Find the nearest hospital
-  findNearestHospital: (userLat: number, userLng: number): Hospital & { distance: number } => {
+  findNearestHospital: (userLat: number, userLng: number): HospitalWithDistance => {
     return hospitals
       .map(hospital => ({
         ...hospital,
@@ -159,4 +164,4 @@ export const hospitalService = {
   }
 };
 
-export type { Hospital };
+export type { Hospital, HospitalWithDistance };

@@ -1,5 +1,5 @@
 import { UserData, getDatabase, saveDatabase } from './userDatabase';
-import { hospitalService } from '@/services/hospitalService';
+import { hospitalService, HospitalWithDistance } from '@/services/hospitalService';
 
 // Emergency request interface
 export interface EmergencyRequest {

@@ -5,11 +5,11 @@ import { Building2, MapPin, Navigation, Phone, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { useLocation } from '@/hooks/use-location';
 import { useToast } from '@/hooks/use-toast';
-import { hospitalService, Hospital } from '@/services/hospitalService';
+import { hospitalService, Hospital, HospitalWithDistance } from '@/services/hospitalService';
 
 const NearbyHospitals = () => {
   const { userLocation } = useLocation();
-  const [hospitals, setHospitals] = useState<(Hospital & { distance: number })[]>([]);
+  const [hospitals, setHospitals] = useState<HospitalWithDistance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
