@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Navigation } from 'lucide-react';
+import { Navigation, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { UseFormReturn } from 'react-hook-form';
 import { createEmergencyRequest } from '@/utils/emergencyService';
+import { useLocation } from '@/hooks/use-location';
 
 interface EmergencyRequestButtonProps {
   form?: UseFormReturn<any>;
@@ -16,6 +17,7 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { userLocation: gpsLocation, locationStatus, retryFetchLocation } = useLocation();
 
   const handleEmergencyAccess = async () => {
     setIsLoading(true);
@@ -24,6 +26,21 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
       // If form is not provided, redirect to emergency page
       if (!form) {
         navigate('/emergency');
+        return;
+      }
+      
+      // Try to use GPS location if available
+      const currentLocation = userLocation || gpsLocation;
+      
+      // If no location is available, try to fetch it
+      if (!currentLocation && locationStatus !== 'loading') {
+        retryFetchLocation();
+        toast({
+          title: "Location Required",
+          description: "Please enable location services for better emergency response",
+          variant: "destructive"
+        });
+        setIsLoading(false);
         return;
       }
       
@@ -55,7 +72,7 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
         missingFields.push('blood group');
       }
       
-      if (!address && !userLocation) {
+      if (!address && !currentLocation) {
         form.setError('address', { message: 'Address or location access is required for emergency services' });
         isValid = false;
         missingFields.push('address or location access');
@@ -78,7 +95,7 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
         bloodGroup,
         address,
         notes,
-        location: userLocation,
+        location: currentLocation,
       });
       
       if (!emergencyRequest) {
@@ -126,7 +143,7 @@ const EmergencyRequestButton: React.FC<EmergencyRequestButtonProps> = ({ form, u
         </>
       ) : (
         <>
-          <Navigation className="mr-2 h-6 w-6" />
+          <MapPin className="mr-2 h-6 w-6" />
           Share Location & Request Ambulance
         </>
       )}
