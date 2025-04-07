@@ -1,11 +1,16 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Pill, Search, SendHorizontal, Stethoscope, X, Heart, Brain, AlarmClock, Thermometer } from 'lucide-react';
+import { Pill, Search, SendHorizontal, Stethoscope, X, Heart, Brain, AlarmClock, Thermometer, Plus, Trash2, Bell } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useReminders, Reminder } from '@/contexts/ReminderContext';
+import { toast } from '@/hooks/use-toast';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const commonHealthIssues = [
   { query: "Headache remedies", response: "For headaches, rest in a quiet dark room, stay hydrated, and take over-the-counter pain relievers like acetaminophen or ibuprofen if appropriate. See a doctor if headaches are severe or persistent." },
@@ -17,12 +22,6 @@ const commonHealthIssues = [
   { query: "Diet recommendations", response: "A healthy diet includes plenty of fruits, vegetables, whole grains, lean proteins, and healthy fats. Limit processed foods, added sugars, and excessive salt. Stay hydrated and practice mindful eating. Consider consulting a registered dietitian for personalized advice." },
 ];
 
-const medicationReminders = [
-  { name: "Blood Pressure Medication", time: "8:00 AM", description: "Take with food" },
-  { name: "Vitamin Supplement", time: "9:00 AM", description: "Take with breakfast" },
-  { name: "Allergy Medication", time: "10:00 PM", description: "Take before bed" },
-];
-
 interface VitalReading {
   timestamp: string;
   systolic: number;
@@ -30,20 +29,39 @@ interface VitalReading {
   pulse: number;
 }
 
+interface MedicationFormValues {
+  name: string;
+  time: string;
+  description: string;
+  isRecurring: boolean;
+  recurringPattern: 'daily' | 'weekly' | 'monthly';
+}
+
 const AIHealthAssistant = () => {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('chatbot');
+  const navigate = useNavigate();
+  
+  const { reminders, addReminder, deleteReminder, isPremiumUser } = useReminders();
+  
+  const form = useForm<MedicationFormValues>({
+    defaultValues: {
+      name: '',
+      time: '',
+      description: 'Take with water',
+      isRecurring: false,
+      recurringPattern: 'daily'
+    }
+  });
 
-  // Mock BP monitor data
   const [vitalReadings, setVitalReadings] = useState<VitalReading[]>([
     { timestamp: "2025-04-03 08:30", systolic: 120, diastolic: 80, pulse: 72 },
     { timestamp: "2025-04-02 09:15", systolic: 118, diastolic: 78, pulse: 70 },
     { timestamp: "2025-04-01 08:45", systolic: 122, diastolic: 82, pulse: 74 },
   ]);
 
-  // Add a new demo reading
   const addDemoReading = () => {
     const systolic = Math.floor(Math.random() * 20) + 110; // Random between 110-130
     const diastolic = Math.floor(Math.random() * 15) + 70; // Random between 70-85
@@ -68,7 +86,6 @@ const AIHealthAssistant = () => {
 
     setIsLoading(true);
     
-    // Simulate AI response with a delay
     setTimeout(() => {
       const matchedIssue = commonHealthIssues.find(issue => 
         query.toLowerCase().includes(issue.query.toLowerCase())
@@ -103,6 +120,46 @@ const AIHealthAssistant = () => {
   const clearAll = () => {
     setQuery('');
     setResponse('');
+  };
+  
+  const onSubmitReminder = (data: MedicationFormValues) => {
+    const reminderTime = new Date(data.time).toISOString();
+    
+    addReminder({
+      message: data.name,
+      time: reminderTime,
+      isRecurring: data.isRecurring,
+      recurringPattern: data.recurringPattern,
+      isPremium: true
+    });
+    
+    toast({
+      title: "Reminder Added",
+      description: `${data.name} reminder set for ${format(new Date(data.time), 'MMM d, yyyy h:mm a')}`,
+    });
+    
+    form.reset();
+  };
+  
+  const handleDeleteReminder = (id: string) => {
+    deleteReminder(id);
+    toast({
+      title: "Reminder Deleted",
+      description: "Medication reminder has been removed",
+    });
+  };
+  
+  const formatReminderTime = (time: string) => {
+    try {
+      const date = new Date(time);
+      return format(date, 'MMM d, yyyy h:mm a');
+    } catch (error) {
+      return time;
+    }
+  };
+  
+  const viewAllReminders = () => {
+    navigate('/reminders');
   };
 
   return (
@@ -245,32 +302,123 @@ const AIHealthAssistant = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-md font-medium">Medication Reminders</h3>
-                <Button size="sm" variant="outline">
-                  <AlarmClock className="mr-2 h-4 w-4" />
-                  Add Reminder
-                </Button>
+                {isPremiumUser ? (
+                  <div className="flex gap-2">
+                    <Button onClick={viewAllReminders} size="sm" variant="outline">
+                      <AlarmClock className="mr-2 h-4 w-4" />
+                      View All
+                    </Button>
+                  </div>
+                ) : (
+                  <Button onClick={() => navigate('/premium')} size="sm" variant="outline" className="text-swift-red hover:bg-swift-red/10">
+                    <Bell className="mr-2 h-4 w-4 text-swift-red" />
+                    Upgrade for Reminders
+                  </Button>
+                )}
               </div>
               
-              <div className="bg-gray-50 rounded-md">
-                {medicationReminders.map((reminder, index) => (
-                  <div key={index} className="p-3 border-b border-gray-100 last:border-0">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{reminder.name}</p>
-                        <p className="text-sm text-gray-500">{reminder.description}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium bg-gray-200 px-2 py-1 rounded">
-                          <AlarmClock className="inline-block mr-1 h-3 w-3" />
-                          {reminder.time}
-                        </span>
-                        <Button size="sm" variant="ghost">
-                          <X size={16} />
-                        </Button>
-                      </div>
+              {isPremiumUser && (
+                <form onSubmit={form.handleSubmit(onSubmitReminder)} className="space-y-4 bg-gray-50 p-4 rounded-md">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Medication Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Blood Pressure Medication" required {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <FormField
+                        control={form.control}
+                        name="time"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Reminder Time</FormLabel>
+                            <FormControl>
+                              <Input type="datetime-local" required {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
-                ))}
+                  
+                  <div>
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Instructions</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Take with food" className="resize-none" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <Button type="submit" className="w-full">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Medication Reminder
+                  </Button>
+                </form>
+              )}
+              
+              <div className="bg-gray-50 rounded-md">
+                {reminders.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Bell className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                    <p>No medication reminders set</p>
+                    <p className="text-sm">Add your first reminder above</p>
+                  </div>
+                ) : (
+                  reminders.slice(0, 3).map((reminder) => (
+                    <div key={reminder.id} className="p-3 border-b border-gray-100 last:border-0">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{reminder.message}</p>
+                          <p className="text-sm text-gray-500 flex items-center">
+                            <AlarmClock className="inline-block mr-1 h-3 w-3" />
+                            {formatReminderTime(reminder.time)}
+                            {reminder.isRecurring && (
+                              <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                                {reminder.recurringPattern}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => handleDeleteReminder(reminder.id)}
+                          >
+                            <Trash2 size={16} className="text-swift-red" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                
+                {reminders.length > 3 && (
+                  <div className="p-3 text-center">
+                    <Button variant="link" size="sm" onClick={viewAllReminders}>
+                      View all {reminders.length} reminders
+                    </Button>
+                  </div>
+                )}
               </div>
               
               <div className="rounded-md bg-green-50 p-3 text-sm">
