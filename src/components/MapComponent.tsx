@@ -19,13 +19,19 @@ declare global {
   }
 }
 
+// Extended Map type to include our custom properties
+interface ExtendedMap extends google.maps.Map {
+  placesService?: google.maps.places.PlacesService;
+}
+
 interface MapProps {
   className?: string;
 }
 
 const MapComponent: React.FC<MapProps> = ({ className }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [map, setMap] = useState<ExtendedMap | null>(null);
+  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const [nearbyHospitals, setNearbyHospitals] = useState<HospitalWithDistance[]>([]);
   const { userLocation } = useLocation();
   const { toast } = useToast();
@@ -121,11 +127,11 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
       fullscreenControl: true,
     };
 
-    const newMap = new window.google.maps.Map(mapRef.current, mapOptions);
+    const newMap = new window.google.maps.Map(mapRef.current, mapOptions) as ExtendedMap;
     setMap(newMap);
 
     // Add marker for user's location
-    new window.google.maps.Marker({
+    const userMarker = new window.google.maps.Marker({
       position: { lat: userLocation.lat, lng: userLocation.lng },
       map: newMap,
       title: 'Your Location',
@@ -138,16 +144,15 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
         strokeWeight: 2,
       }
     });
+    
+    setMarkers(prevMarkers => [...prevMarkers, userMarker]);
 
     // Find nearby hospitals
     findNearbyHospitals(userLocation.lat, userLocation.lng, newMap);
     
     // Add Places service for hospital search
     if (window.google && window.google.maps && window.google.maps.places) {
-      const service = new window.google.maps.places.PlacesService(newMap);
-      
-      // Store the service in a property for later use
-      newMap.placesService = service;
+      newMap.placesService = new window.google.maps.places.PlacesService(newMap);
     }
   };
 
@@ -166,12 +171,10 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
       map.placesService.nearbySearch(request, (results: any, status: any) => {
         if (status === window.google.maps.places.PlacesServiceStatus.OK) {
           // Clear existing markers
-          if (map) {
-            clearExistingMarkers(map);
-          }
+          clearExistingMarkers();
           
           // Add user location marker
-          new window.google.maps.Marker({
+          const userMarker = new window.google.maps.Marker({
             position: { lat: userLocation.lat, lng: userLocation.lng },
             map: map,
             title: 'Your Location',
@@ -184,6 +187,8 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
               strokeWeight: 2,
             }
           });
+          
+          setMarkers(prevMarkers => [...prevMarkers, userMarker]);
           
           // Process results and add markers
           const mappedResults = results.map((result: any) => {
@@ -249,10 +254,10 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
       })));
       
       if (map) {
-        clearExistingMarkers(map);
+        clearExistingMarkers();
         
         // Add user location marker
-        new window.google.maps.Marker({
+        const userMarker = new window.google.maps.Marker({
           position: { lat: userLocation.lat, lng: userLocation.lng },
           map,
           title: 'Your Location',
@@ -265,6 +270,8 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
             strokeWeight: 2,
           }
         });
+        
+        setMarkers(prevMarkers => [...prevMarkers, userMarker]);
         
         filteredHospitals.forEach(hospital => {
           const hospitalWithDistance = {
@@ -283,11 +290,11 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
   };
   
   // Clear existing markers on the map
-  const clearExistingMarkers = (map: google.maps.Map) => {
-    // This is a bit of a hack since we don't store markers,
-    // but it will remove all overlays from the map
-    map.setMap(null);
-    map.setMap(mapRef.current!);
+  const clearExistingMarkers = () => {
+    // Remove all markers from the map
+    markers.forEach(marker => marker.setMap(null));
+    // Clear the markers array
+    setMarkers([]);
   };
 
   // Find nearby hospitals using our service
@@ -318,6 +325,8 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
         url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
       }
     });
+
+    setMarkers(prevMarkers => [...prevMarkers, marker]);
 
     // Add info window for the hospital
     const infoWindow = new window.google.maps.InfoWindow({
@@ -368,6 +377,8 @@ const MapComponent: React.FC<MapProps> = ({ className }) => {
                 : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
           }
         });
+        
+        setMarkers(prevMarkers => [...prevMarkers, marker]);
 
         // Add info window for each ambulance
         const infoWindow = new window.google.maps.InfoWindow({

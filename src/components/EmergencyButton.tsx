@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Ambulance, AlertTriangle, MapPin, X } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import { 
   Dialog,
   DialogContent,
@@ -11,12 +12,28 @@ import {
   DialogHeader,
   DialogTitle 
 } from '@/components/ui/dialog';
+import { useLocation } from '@/hooks/use-location';
+import { createEmergencyRequest } from '@/utils/emergencyService';
 
 const EmergencyButton = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { userLocation, locationStatus, fetchAddressFromCoordinates } = useLocation();
+  const [address, setAddress] = useState('Your current location');
+
+  // Fetch address when user location is available
+  React.useEffect(() => {
+    if (userLocation) {
+      fetchAddressFromCoordinates(userLocation.lat, userLocation.lng).then((addr) => {
+        if (addr) {
+          setAddress(addr);
+        }
+      });
+    }
+  }, [userLocation, fetchAddressFromCoordinates]);
 
   const handleEmergencyClick = () => {
     setIsDialogOpen(true);
@@ -25,23 +42,57 @@ const EmergencyButton = () => {
   const handleConfirmRequest = () => {
     setIsRequesting(true);
     
-    // Simulate request processing
-    setTimeout(() => {
-      setIsRequesting(false);
-      setIsConfirmed(true);
-      
-      // Auto close after showing confirmation
-      setTimeout(() => {
-        setIsDialogOpen(false);
-        setIsConfirmed(false);
-        
-        toast({
-          title: "Ambulance Dispatched",
-          description: "An ambulance has been dispatched to your location. ETA: 8 minutes.",
-          variant: "default",
+    // Create emergency request with actual user location
+    try {
+      if (userLocation) {
+        // Create a real emergency request with location data
+        const emergencyRequest = createEmergencyRequest({
+          name: 'Emergency User',
+          phone: '1234567890', // This would normally come from user profile
+          bloodGroup: 'O+', // This would normally come from user profile
+          location: userLocation,
+          address: address
         });
-      }, 3000);
-    }, 2000);
+
+        if (emergencyRequest) {
+          // Store emergency request data for the session
+          localStorage.setItem('current_emergency_request', JSON.stringify(emergencyRequest));
+          
+          // Show success state
+          setTimeout(() => {
+            setIsRequesting(false);
+            setIsConfirmed(true);
+            
+            // Auto close after showing confirmation
+            setTimeout(() => {
+              setIsDialogOpen(false);
+              setIsConfirmed(false);
+              
+              toast({
+                title: "Ambulance Dispatched",
+                description: "An ambulance has been dispatched to your location. ETA: 8 minutes.",
+                variant: "destructive",
+              });
+              
+              // Navigate to tracking page
+              navigate('/tracking');
+            }, 3000);
+          }, 2000);
+        } else {
+          throw new Error('Failed to create emergency request');
+        }
+      } else {
+        throw new Error('Location not available');
+      }
+    } catch (error) {
+      setIsRequesting(false);
+      console.error('Emergency request error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -72,7 +123,7 @@ const EmergencyButton = () => {
                 <MapPin className="h-5 w-5 text-swift-red flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium">Your current location</p>
-                  <p className="text-xs text-gray-500">123 Main Street, Central City</p>
+                  <p className="text-xs text-gray-500">{address}</p>
                 </div>
               </div>
               
