@@ -1,9 +1,29 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Ambulance, Clock, MapPin } from "lucide-react";
+import { Ambulance, Clock, MapPin, Download } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+  
+  const handleEmergencyRequest = () => {
+    navigate('/emergency');
+  };
+  
+  const handleDownloadApp = () => {
+    // For mobile devices, directly start the download
+    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile && /Android/i.test(navigator.userAgent)) {
+      // For Android mobile devices, directly start the APK download
+      window.location.href = '/downloads/swift-ride-rescue.apk';
+    } else {
+      // For desktop or iOS, navigate to the app download instructions page
+      navigate('/app-download');
+    }
+  };
+
   return (
     <section className="hero-pattern py-20 md:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,10 +38,19 @@ const HeroSection = () => {
                 Swift Ride Rescue connects you with emergency medical transport services instantly. Our app-based platform gets help to your location quickly, providing peace of mind when every second counts.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button className="bg-swift-red hover:bg-red-700 text-white text-lg px-8 py-6 rounded-md">
+                <Button 
+                  onClick={handleEmergencyRequest}
+                  className="bg-swift-red hover:bg-red-700 text-white text-lg px-8 py-6 rounded-md"
+                >
+                  <Ambulance className="mr-2 h-6 w-6" />
                   Request Ambulance
                 </Button>
-                <Button variant="outline" className="border-swift-red text-swift-red hover:bg-swift-red hover:text-white text-lg px-8 py-6 rounded-md">
+                <Button 
+                  variant="outline" 
+                  className="border-swift-red text-swift-red hover:bg-swift-red hover:text-white text-lg px-8 py-6 rounded-md"
+                  onClick={handleDownloadApp}
+                >
+                  <Download className="mr-2 h-6 w-6" />
                   Download App
                 </Button>
               </div>
