@@ -25,7 +25,7 @@ const AboutPage = () => {
               <div>
                 <h2 className="text-3xl font-bold text-swift-dark mb-6">Our Story</h2>
                 <p className="text-gray-600 mb-4">
-                  Swift Ride Rescue was founded in 2022 by a team of emergency medical professionals and technology innovators who saw an opportunity to improve emergency response times through modern technology.
+                  Swift Ride Rescue was founded in 2025 by gitesh kukreja a team of emergency medical professionals and technology innovators who saw an opportunity to improve emergency response times through modern technology.
                 </p>
                 <p className="text-gray-600 mb-4">
                   After witnessing the challenges of traditional emergency response systems, our founders created a platform that leverages mobile technology, GPS, and a network of certified ambulance services to provide faster and more efficient emergency medical transport.
